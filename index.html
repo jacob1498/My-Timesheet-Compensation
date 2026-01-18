@@ -136,6 +136,13 @@
         .filter-minimal i { color: var(--text-muted); }
         .filter-minimal select { border: none; background: transparent; outline: none; color: var(--text-muted); font-size: 0.9rem; margin-right: 0.5rem; cursor: pointer; }
         
+        /* Type Badges */
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .badge-Regular { background: #e9ecef; color: #495057; }
+        .badge-Vacation { background: #c3e6cb; color: #155724; }
+        .badge-Sick { background: #f5c6cb; color: #721c24; }
+        .badge-Rest { background: #ffeeba; color: #856404; }
+        
         /* Calendar View */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 1rem; }
         .calendar-day-header { text-align: center; font-weight: bold; font-size: 0.8rem; color: var(--text-muted); padding: 5px 0; }
@@ -290,6 +297,15 @@
                             <input type="date" id="date">
                         </div>
                         <div class="input-wrapper">
+                            <label for="workType">Type</label>
+                            <select id="workType">
+                                <option value="Regular">Regular</option>
+                                <option value="Vacation">Vacation</option>
+                                <option value="Sick">Sick Leave</option>
+                                <option value="Rest">Rest Day</option>
+                            </select>
+                        </div>
+                        <div class="input-wrapper">
                         <label for="timeIn">Time In <i class="fas fa-clock" id="clockInNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i></label>
                             <input type="time" id="timeIn">
                         </div>
@@ -317,6 +333,15 @@
                 <div id="recordListContainer" style="display: none;">
                     <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div class="filter-minimal">
+                            <select id="typeFilter">
+                                <option value="">All Types</option>
+                                <option value="Regular">Regular</option>
+                                <option value="Vacation">Vacation</option>
+                                <option value="Sick">Sick</option>
+                                <option value="Rest">Rest</option>
+                            </select>
+                        </div>
+                        <div class="filter-minimal">
                             <select id="filterType"><option value="month">Month</option><option value="date">Day</option><option value="year">Year</option></select>
                             <input type="month" id="monthFilter">
                             <input type="date" id="dateFilter" style="display: none;">
@@ -333,6 +358,7 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
+                                    <th>Type</th>
                                     <th>Time In</th>
                                     <th>Time Out</th>
                                     <th>Total</th>
@@ -762,6 +788,7 @@
         }
 
         const dateInput = document.getElementById('date');
+        const workTypeInput = document.getElementById('workType');
         const timeInInput = document.getElementById('timeIn');
         const timeOutInput = document.getElementById('timeOut');
         const breakDurationInput = document.getElementById('breakDuration');
@@ -799,6 +826,11 @@
                 r.date.includes(filterText) || 
                 (r.notes && r.notes.toLowerCase().includes(filterText.toLowerCase()))
             );
+            
+            // Type Filter
+            if (typeFilter.value) {
+                filteredRecords = filteredRecords.filter(r => (r.workType || 'Regular') === typeFilter.value);
+            }
             
             // Filter Logic
             if (filterType.value === 'month' && monthFilter.value) {
@@ -866,6 +898,7 @@
 
                 row.innerHTML = `
                     <td data-label="Date">${record.date}</td>
+                    <td data-label="Type"><span class="badge badge-${record.workType || 'Regular'}">${record.workType || 'Regular'}</span></td>
                     <td data-label="Time In">${record.timeIn}</td>
                     <td data-label="Time Out">${record.timeOut || '---'}</td>
                     <td data-label="Total">${displayTotal} ${warningHtml}</td>
@@ -887,6 +920,10 @@
                             <button class="edit-btn" onclick="editRecord('${recId}')" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;"><i class="fas fa-edit"></i></button>
                             <button class="delete-btn" onclick="deleteRecord('${recId}')" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;"><i class="fas fa-trash-alt"></i></button>
                         </div>
+                    </div>
+                    <div class="day-card-row">
+                        <span class="day-card-label">Type</span>
+                        <span class="day-card-val"><span class="badge badge-${record.workType || 'Regular'}">${record.workType || 'Regular'}</span></span>
                     </div>
                     <div class="day-card-row">
                         <span class="day-card-label">Shift</span>
@@ -923,6 +960,7 @@
         }
 
         monthFilter.addEventListener('change', () => renderTable(searchInput.value));
+        typeFilter.addEventListener('change', () => renderTable(searchInput.value));
         dateFilter.addEventListener('change', () => renderTable(searchInput.value));
         yearFilter.addEventListener('input', () => renderTable(searchInput.value));
         
@@ -1187,6 +1225,7 @@
             const username = localStorage.getItem('dtr_username');
             const recordData = {
                 date: dateInput.value,
+                workType: workTypeInput.value,
                 timeIn: timeInInput.value,
                 timeOut: timeOutInput.value,
                 username: username,
@@ -1221,6 +1260,7 @@
             
             // Reset Form
             dateInput.valueAsDate = new Date();
+            workTypeInput.value = 'Regular';
             timeInInput.value = '';
             timeOutInput.value = '';
             breakDurationInput.value = '0';
@@ -1233,6 +1273,7 @@
             const record = records.find(r => (r.id || `local_${records.indexOf(r)}`) === id);
             if(record) {
                 dateInput.value = record.date;
+                workTypeInput.value = record.workType || 'Regular';
                 timeInInput.value = record.timeIn;
                 timeOutInput.value = record.timeOut;
                 breakDurationInput.value = record.breakDuration || 0;
