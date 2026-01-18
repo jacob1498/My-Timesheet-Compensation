@@ -10,6 +10,8 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
     <title>My-DTR</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
             --primary-color: #007bff; 
@@ -144,6 +146,11 @@
         .calendar-day .day-number { font-weight: 600; position: absolute; top: 5px; left: 8px; }
         .calendar-day .day-hours { font-size: 0.7rem; position: absolute; bottom: 5px; right: 8px; color: var(--text-muted); font-weight: 600; }
         .calendar-day.today .day-hours { color: rgba(255,255,255,0.9); }
+        .calendar-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .calendar-nav button { background: none; border: none; color: var(--primary-color); font-size: 1.2rem; cursor: pointer; padding: 5px 10px; }
+        .calendar-title { font-weight: bold; font-size: 1.1rem; }
+
+        .chart-wrapper { position: relative; height: 300px; width: 100%; margin-top: 1rem; display: none; }
 
         /* Welcome Banner */
         .welcome-banner { background: linear-gradient(135deg, var(--primary-color), #0056b3); color: white; padding: 1.5rem 2rem; border-radius: 16px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 20px rgba(0, 123, 255, 0.2); }
@@ -316,7 +323,9 @@
                             <input type="number" id="yearFilter" placeholder="YYYY" style="display: none; width: 60px;">
                             <i class="fas fa-filter" style="margin-left: 5px;"></i>
                         </div>
+                        <button id="downloadPdfBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: #dc3545; color: white; border: none; border-radius: 20px;"><i class="fas fa-file-pdf"></i> PDF</button>
                         <button id="toggleCalendarBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: var(--input-bg); color: var(--text-color);"><i class="fas fa-calendar-alt"></i> View</button>
+                        <button id="toggleChartBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: var(--input-bg); color: var(--text-color);"><i class="fas fa-chart-bar"></i> Chart</button>
                     </div>
                     <div class="table-responsive">
                         <table id="dtrTable">
@@ -343,6 +352,10 @@
                     <!-- Calendar View Container -->
                     <div id="calendarView" style="display: none;">
                         <!-- Calendar injected via JS -->
+                    </div>
+                    <!-- Chart Container -->
+                    <div id="chartView" class="chart-wrapper">
+                        <canvas id="hoursChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -452,6 +465,8 @@
         const yearFilter = document.getElementById('yearFilter');
         const filterType = document.getElementById('filterType');
         const toggleCalendarBtn = document.getElementById('toggleCalendarBtn');
+        const toggleChartBtn = document.getElementById('toggleChartBtn');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
         const enableNotifyBtn = document.getElementById('enableNotifyBtn');
         const clockInNow = document.getElementById('clockInNow');
         const clockOutNow = document.getElementById('clockOutNow');
@@ -880,6 +895,7 @@
             document.getElementById('totalDaysDisplay').textContent = filteredRecords.length;
 
             renderCalendar(records); // Update calendar if visible
+            renderChart(filteredRecords); // Update chart if visible
         }
 
         monthFilter.addEventListener('change', () => renderTable(searchInput.value));
@@ -900,21 +916,28 @@
 
         // Calendar Logic
         let isCalendarView = false;
+        let isChartView = false;
+        
         toggleCalendarBtn.addEventListener('click', () => {
             isCalendarView = !isCalendarView;
+            isChartView = false; // Reset chart view
             const tableDiv = document.querySelector('.table-responsive');
             const swipeDiv = document.getElementById('mobileSwipeView');
             const calDiv = document.getElementById('calendarView');
+            const chartDiv = document.getElementById('chartView');
             
             if (isCalendarView) {
                 tableDiv.style.display = 'none';
                 swipeDiv.style.display = 'none';
+                chartDiv.style.display = 'none';
                 calDiv.style.display = 'block';
                 toggleCalendarBtn.innerHTML = '<i class="fas fa-list"></i> List';
+                toggleChartBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Chart';
                 renderCalendar(records);
             } else {
                 tableDiv.style.display = window.innerWidth > 600 ? 'block' : 'none';
                 swipeDiv.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
+                chartDiv.style.display = 'none';
                 calDiv.style.display = 'none';
                 toggleCalendarBtn.innerHTML = '<i class="fas fa-calendar-alt"></i> View';
             }
@@ -933,7 +956,13 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
             
-            let html = `<div style="text-align:center; font-weight:bold; margin-bottom:10px;">${new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })}</div>`;
+            let html = `
+                <div class="calendar-nav">
+                    <button onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <div class="calendar-title">${new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })}</div>
+                    <button onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            `;
             html += `<div class="calendar-grid">`;
             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => html += `<div class="calendar-day-header">${d}</div>`);
             
@@ -951,7 +980,126 @@
             }
             html += `</div>`;
             calDiv.innerHTML = html;
+            
+            // Add Swipe Listeners
+            const grid = calDiv.querySelector('.calendar-grid');
+            if(grid) {
+                let touchStartX = 0;
+                let touchEndX = 0;
+                grid.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+                grid.addEventListener('touchend', e => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    if (touchStartX - touchEndX > 50) changeMonth(1); // Swipe Left -> Next
+                    if (touchEndX - touchStartX > 50) changeMonth(-1); // Swipe Right -> Prev
+                });
+            }
         }
+
+        window.changeMonth = function(offset) {
+            const now = new Date();
+            const [y, m] = monthFilter.value ? monthFilter.value.split('-') : [now.getFullYear(), now.getMonth() + 1];
+            const newDate = new Date(parseInt(y), parseInt(m) - 1 + offset, 1);
+            
+            const newY = newDate.getFullYear();
+            const newM = String(newDate.getMonth() + 1).padStart(2, '0');
+            
+            monthFilter.value = `${newY}-${newM}`;
+            
+            // Ensure filter type is month so the view updates correctly
+            filterType.value = 'month';
+            monthFilter.style.display = 'block';
+            dateFilter.style.display = 'none';
+            yearFilter.style.display = 'none';
+            
+            renderTable(searchInput.value);
+        }
+
+        // Chart Logic
+        let myChart = null;
+        toggleChartBtn.addEventListener('click', () => {
+            isChartView = !isChartView;
+            isCalendarView = false; // Reset calendar view
+            const tableDiv = document.querySelector('.table-responsive');
+            const swipeDiv = document.getElementById('mobileSwipeView');
+            const calDiv = document.getElementById('calendarView');
+            const chartDiv = document.getElementById('chartView');
+
+            if (isChartView) {
+                tableDiv.style.display = 'none';
+                swipeDiv.style.display = 'none';
+                calDiv.style.display = 'none';
+                chartDiv.style.display = 'block';
+                toggleChartBtn.innerHTML = '<i class="fas fa-list"></i> List';
+                toggleCalendarBtn.innerHTML = '<i class="fas fa-calendar-alt"></i> View';
+                renderChart(records.filter(r => r.date.includes(searchInput.value))); // Use current filter
+            } else {
+                tableDiv.style.display = window.innerWidth > 600 ? 'block' : 'none';
+                swipeDiv.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
+                chartDiv.style.display = 'none';
+                toggleChartBtn.innerHTML = '<i class="fas fa-chart-bar"></i> Chart';
+            }
+        });
+
+        function renderChart(data) {
+            const ctx = document.getElementById('hoursChart');
+            if (!ctx || document.getElementById('chartView').style.display === 'none') return;
+
+            // Aggregate data by date
+            const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const labels = sortedData.map(r => r.date.substring(5)); // MM-DD
+            const hours = sortedData.map(r => {
+                if (!r.timeOut) return 0;
+                const start = new Date(`1970-01-01T${r.timeIn}:00`);
+                const end = new Date(`1970-01-01T${r.timeOut}:00`);
+                let diff = (end - start) / 1000 / 60 / 60;
+                if (diff < 0) diff += 24;
+                diff -= (parseFloat(r.breakDuration) || 0);
+                return diff > 0 ? diff : 0;
+            });
+
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Hours Worked',
+                        data: hours,
+                        backgroundColor: '#007bff',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Hours' } }
+                    }
+                }
+            });
+        }
+
+        // PDF Download Logic
+        downloadPdfBtn.addEventListener('click', () => {
+            // Temporarily show table for PDF generation if hidden
+            const tableDiv = document.querySelector('.table-responsive');
+            const wasHidden = tableDiv.style.display === 'none';
+            if (wasHidden) tableDiv.style.display = 'block';
+
+            const element = document.getElementById('dtrTable');
+            const opt = {
+                margin: 0.5,
+                filename: 'my-dtr-records.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                if (wasHidden) tableDiv.style.display = 'none';
+            });
+        });
 
         clockInNow.addEventListener('click', () => {
             const now = new Date();
