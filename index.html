@@ -246,7 +246,30 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // --- FIREBASE SETUP ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // TODO: Replace the following config with your own from the Firebase Console
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            console.log("Firebase initialized");
+        } catch (e) {
+            console.warn("Firebase config missing or invalid. Data will not sync.");
+        }
+
         // --- Login Logic ---
         // const CORRECT_PASSCODE = "1234"; // Removed hardcoded passcode
         const registerContainer = document.getElementById('registerContainer');
@@ -297,6 +320,22 @@
             darkModeToggle.checked = true;
         }
 
+        // --- Realtime Data Sync ---
+        let records = [];
+        let unsubscribe;
+
+        function setupRealtimeListener(username) {
+            if (!db || !username) return;
+            if (unsubscribe) unsubscribe(); // Stop listening to previous user
+
+            const q = query(collection(db, "dtr_records"), where("username", "==", username));
+            
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTable(searchInput.value); // Re-render with current search
+            });
+        }
+
         // Check Registration Status
         function checkAuthStatus() {
             const storedPass = localStorage.getItem('dtr_password');
@@ -318,6 +357,7 @@
                 if (localStorage.getItem('dtr_logged_in') === 'true' || sessionStorage.getItem('dtr_logged_in') === 'true') {
                     loginContainer.style.display = 'none';
                     mainContainer.style.display = 'flex';
+                    setupRealtimeListener(storedUser); // Start Sync
                 } else {
                     loginContainer.style.display = 'block';
                     mainContainer.style.display = 'none';
@@ -372,6 +412,7 @@
                 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
+                setupRealtimeListener(loginUsername.value); // Start Sync
             } else {
                 loginError.style.display = 'block';
             }
@@ -437,6 +478,7 @@
 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
+                setupRealtimeListener(localStorage.getItem('dtr_username')); // Start Sync
             } catch (err) {
                 console.error(err);
                 // Specific error for file:// protocol
@@ -493,6 +535,7 @@
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('dtr_logged_in');
             sessionStorage.removeItem('dtr_logged_in');
+            if (unsubscribe) unsubscribe(); // Stop Sync
             mainContainer.style.display = 'none';
             checkAuthStatus(); // Re-evaluate to show login
             passInput.value = '';
@@ -509,7 +552,7 @@
         dateInput.valueAsDate = new Date();
 
         // Load records from local storage
-        let records = JSON.parse(localStorage.getItem('dtr_records')) || [];
+        // let records = JSON.parse(localStorage.getItem('dtr_records')) || []; // Replaced by Firebase
 
         function renderTable(filterText = '') {
             tableBody.innerHTML = '';
@@ -537,19 +580,26 @@
             });
         }
 
-        function addRecord() {
+        async function addRecord() {
             if (!dateInput.value || !timeInInput.value || !timeOutInput.value) {
                 alert('Please fill in all fields');
                 return;
             }
             
-            records.push({
-                date: dateInput.value,
-                timeIn: timeInInput.value,
-                timeOut: timeOutInput.value
-            });
+            const username = localStorage.getItem('dtr_username');
             
-            saveAndRender();
+            if (db && username) {
+                try {
+                    await addDoc(collection(db, "dtr_records"), {
+                        date: dateInput.value,
+                        timeIn: timeInInput.value,
+                        timeOut: timeOutInput.value,
+                        username: username
+                    });
+                } catch (e) { alert("Error saving: " + e.message); }
+            } else {
+                alert("Database not connected or user not found.");
+            }
         }
 
         // Navigation Logic
@@ -563,16 +613,13 @@
             document.getElementById(sectionId + 'Section').classList.add('active');
         }
 
-        window.deleteRecord = function(index) {
+        window.deleteRecord = async function(index) {
             if(confirm('Are you sure you want to delete this record?')) {
-                records.splice(index, 1);
-                saveAndRender();
+                const record = records[index];
+                if (db && record.id) {
+                    await deleteDoc(doc(db, "dtr_records", record.id));
+                }
             }
-        }
-
-        function saveAndRender() {
-            localStorage.setItem('dtr_records', JSON.stringify(records));
-            renderTable();
         }
 
         addBtn.addEventListener('click', addRecord);
