@@ -854,7 +854,9 @@
                 let rowClass = "";
                 let warningHtml = "";
 
-                if (record.timeOut) {
+                if (record.workType && record.workType !== 'Regular') {
+                    displayTotal = "---";
+                } else if (record.timeOut) {
                     // Calculate duration
                     const start = new Date(`1970-01-01T${record.timeIn}:00`);
                     const end = new Date(`1970-01-01T${record.timeOut}:00`);
@@ -1217,8 +1219,13 @@
         });
 
         async function addRecord() {
-            if (!dateInput.value || !timeInInput.value) {
-                alert('Please enter Date and Time In');
+            if (!dateInput.value) {
+                alert('Please enter Date');
+                return;
+            }
+            
+            if (workTypeInput.value === 'Regular' && !timeInInput.value) {
+                alert('Please enter Time In');
                 return;
             }
             
@@ -1261,6 +1268,7 @@
             // Reset Form
             dateInput.valueAsDate = new Date();
             workTypeInput.value = 'Regular';
+            workTypeInput.dispatchEvent(new Event('change')); // Reset UI state
             timeInInput.value = '';
             timeOutInput.value = '';
             breakDurationInput.value = '0';
@@ -1274,6 +1282,7 @@
             if(record) {
                 dateInput.value = record.date;
                 workTypeInput.value = record.workType || 'Regular';
+                workTypeInput.dispatchEvent(new Event('change')); // Update UI state
                 timeInInput.value = record.timeIn;
                 timeOutInput.value = record.timeOut;
                 breakDurationInput.value = record.breakDuration || 0;
@@ -1332,6 +1341,34 @@
                 localStorage.setItem('dtr_records', JSON.stringify(records));
                 renderTable();
                 alert('All records cleared.');
+            }
+        });
+
+        // Work Type Change Logic
+        workTypeInput.addEventListener('change', () => {
+            const isRegular = workTypeInput.value === 'Regular';
+            
+            timeInInput.disabled = !isRegular;
+            timeOutInput.disabled = !isRegular;
+            breakDurationInput.disabled = !isRegular;
+            
+            const opacity = isRegular ? '1' : '0.5';
+            const pointerEvents = isRegular ? 'auto' : 'none';
+            
+            [timeInInput, timeOutInput, breakDurationInput].forEach(el => {
+                el.style.opacity = opacity;
+                el.style.cursor = isRegular ? 'text' : 'not-allowed';
+            });
+            
+            document.getElementById('clockInNow').style.opacity = opacity;
+            document.getElementById('clockInNow').style.pointerEvents = pointerEvents;
+            document.getElementById('clockOutNow').style.opacity = opacity;
+            document.getElementById('clockOutNow').style.pointerEvents = pointerEvents;
+
+            if (!isRegular) {
+                timeInInput.value = '';
+                timeOutInput.value = '';
+                breakDurationInput.value = '0';
             }
         });
 
