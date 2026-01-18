@@ -29,7 +29,7 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; }
         h1, h2 { text-align: center; color: var(--text-color); }
         
-        .container { background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: none; border: 1px solid var(--border-color); transition: background 0.3s; }
+        .container { background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color); transition: background 0.3s; }
         
         /* Layout for Sidebar */
         .app-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
@@ -49,8 +49,8 @@
         .input-wrapper { display: flex; flex-direction: column; }
         
         label { font-size: 0.9rem; margin-bottom: 0.3rem; color: var(--text-muted); }
-        input, select { padding: 0.8rem; border: 1px solid transparent; background-color: var(--input-bg); border-radius: 8px; font-size: 0.95rem; color: var(--text-color); transition: border 0.2s; }
-        input:focus, select:focus { outline: none; border-color: var(--primary-color); background-color: var(--card-bg); }
+        input, select { padding: 0.8rem; border: 1px solid transparent; background-color: var(--input-bg); border-radius: 8px; font-size: 0.95rem; color: var(--text-color); transition: all 0.2s; width: 100%; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--primary-color); background-color: var(--card-bg); box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1); }
         
         button { padding: 0.8rem 1.5rem; cursor: pointer; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; transition: transform 0.1s, filter 0.2s; }
         button:hover { filter: brightness(85%); }
@@ -70,6 +70,7 @@
         
         /* Top Bar & Search */
         .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .greeting { font-weight: 600; font-size: 1.1rem; margin-right: 1rem; color: var(--primary-color); }
         .search-container { position: relative; width: 300px; }
         .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
         .search-container input { width: 100%; padding-left: 40px; border-radius: 20px; }
@@ -84,6 +85,16 @@
         input:checked + .slider { background-color: var(--primary-color); }
         input:checked + .slider:before { transform: translateX(26px); }
 
+        .link-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline; font-size: 0.85rem; margin-top: 1rem; padding: 0; }
+        .link-btn:hover { color: var(--primary-color); }
+        
+        /* Auth Screens Design */
+        .auth-container { max-width: 400px; width: 90%; margin: 4rem auto; text-align: center; padding: 2.5rem; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+        .auth-input-group { margin-bottom: 1.2rem; }
+        .auth-input-group input { text-align: center; margin-bottom: 0.8rem; }
+        .remember-me { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.2rem; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; }
+        .remember-me input { width: auto; margin: 0; cursor: pointer; }
+        
         /* Mobile Responsive Styles */
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
@@ -91,6 +102,9 @@
             .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 0.5rem; box-sizing: border-box; }
             .nav-btn { padding: 0.5rem; font-size: 0.9rem; white-space: nowrap; }
             .main-content { width: 100%; padding: 1rem; box-sizing: border-box; }
+            
+            .search-container { width: 140px; }
+            .greeting { display: none; } /* Hide greeting on mobile to save space */
             
             .form-group { flex-direction: column; gap: 0.8rem; align-items: stretch; }
             .input-wrapper { width: 100%; }
@@ -106,18 +120,35 @@
     </style>
 </head>
 <body>
+    <!-- Register Screen -->
+    <div class="container auth-container" id="registerContainer" style="display: none;">
+        <h2>Create Account</h2>
+        <div class="auth-input-group">
+            <input type="text" id="regUsername" placeholder="Enter Username">
+            <input type="password" id="regPassword" placeholder="Create Password">
+            <input type="password" id="regConfirmPassword" placeholder="Confirm Password">
+        </div>
+        <button id="registerBtn" style="width: 100%;">Register</button>
+        <button id="backToLoginBtn" class="link-btn" style="display: none;">Back to Login</button>
+    </div>
+
     <!-- Login Screen -->
-    <div class="container" id="loginContainer" style="max-width: 400px; text-align: center; margin-top: 5rem;">
+    <div class="container auth-container" id="loginContainer" style="display: none;">
         <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Avatar" class="avatar" id="userAvatar" title="Click to upload image">
-        <h2>My-DTR</h2>
-        <div style="margin-bottom: 1rem;">
-            <input type="text" id="username" placeholder="Username or Email" style="width: 80%; text-align: center; margin-bottom: 0.5rem;">
-            <input type="password" id="passcode" placeholder="Enter Passcode" style="width: 80%; text-align: center;">
+        <h2 id="loginTitle">Welcome Back</h2>
+        <div class="auth-input-group">
+            <input type="text" id="loginUsername" placeholder="Username">
+            <input type="password" id="passcode" placeholder="Enter Passcode">
         </div>
-        <button id="loginBtn" style="width: 80%;"><i class="fas fa-key"></i> Access System</button>
-        <button id="bioBtn" style="width: 80%; margin-top: 0.5rem; background-color: #28a745;"><i class="fas fa-fingerprint"></i> Login with Fingerprint</button>
-        <p id="loginError" style="color: #dc3545; display: none; margin-top: 10px;">Incorrect Passcode</p>
+        <label class="remember-me">
+            <input type="checkbox" id="rememberMe"> Remember Me
+        </label>
+        <button id="loginBtn" style="width: 100%;"><i class="fas fa-key"></i> Access System</button>
+        <button id="bioBtn" style="width: 100%; margin-top: 0.5rem; background-color: #28a745;"><i class="fas fa-fingerprint"></i> Login with Fingerprint</button>
+        <button id="goToRegisterBtn" class="link-btn">Create New Account</button>
+        <button id="forgotBtn" class="link-btn">Forgot Password? (Reset)</button>
+        <p id="loginError" style="color: #dc3545; display: none; margin-top: 10px;">Incorrect Username or Password</p>
     </div>
 
     <!-- Main App Layout -->
@@ -135,6 +166,7 @@
         <!-- Content Area -->
         <div class="main-content">
             <div class="top-header">
+                <span class="greeting" id="topGreeting">Hello, User</span>
                 <div class="search-container">
                     <i class="fas fa-search"></i>
                     <input type="text" id="searchInput" placeholder="Search records...">
@@ -208,17 +240,31 @@
 
     <script>
         // --- Login Logic ---
-        const CORRECT_PASSCODE = "1234"; // <--- Set your passcode here
+        // const CORRECT_PASSCODE = "1234"; // Removed hardcoded passcode
+        const registerContainer = document.getElementById('registerContainer');
         const loginContainer = document.getElementById('loginContainer');
         const mainContainer = document.getElementById('mainContainer');
+        
+        const registerBtn = document.getElementById('registerBtn');
+        const regUsername = document.getElementById('regUsername');
+        const regPassword = document.getElementById('regPassword');
+        const regConfirmPassword = document.getElementById('regConfirmPassword');
+        const backToLoginBtn = document.getElementById('backToLoginBtn');
+        
         const loginBtn = document.getElementById('loginBtn');
+        const loginUsername = document.getElementById('loginUsername');
         const bioBtn = document.getElementById('bioBtn');
         const passInput = document.getElementById('passcode');
         const loginError = document.getElementById('loginError');
+        const loginTitle = document.getElementById('loginTitle');
+        const forgotBtn = document.getElementById('forgotBtn');
+        const goToRegisterBtn = document.getElementById('goToRegisterBtn');
+        const rememberMeCheckbox = document.getElementById('rememberMe');
+        
         const userAvatar = document.getElementById('userAvatar');
         const profileAvatar = document.getElementById('profileAvatar');
         const topAvatar = document.getElementById('topAvatar');
-        const usernameInput = document.getElementById('username');
+        const topGreeting = document.getElementById('topGreeting');
         const avatarUpload = document.getElementById('avatarUpload');
         const themePicker = document.getElementById('themePicker');
         const darkModeToggle = document.getElementById('darkModeToggle');
@@ -243,22 +289,94 @@
             darkModeToggle.checked = true;
         }
 
-        // Check login status on load
-        if (localStorage.getItem('dtr_logged_in') === 'true') {
-            loginContainer.style.display = 'none';
-            mainContainer.style.display = 'flex';
+        // Check Registration Status
+        function checkAuthStatus() {
+            const storedPass = localStorage.getItem('dtr_password');
+            const storedUser = localStorage.getItem('dtr_username');
+
+            if (!storedPass) {
+                // Not registered
+                registerContainer.style.display = 'block';
+                loginContainer.style.display = 'none';
+                mainContainer.style.display = 'none';
+                backToLoginBtn.style.display = 'none';
+            } else {
+                // Registered
+                registerContainer.style.display = 'none';
+                loginTitle.textContent = `Welcome, ${storedUser || 'User'}`;
+                topGreeting.textContent = `Hello, ${storedUser || 'User'}`;
+                
+                // Check if already logged in
+                if (localStorage.getItem('dtr_logged_in') === 'true' || sessionStorage.getItem('dtr_logged_in') === 'true') {
+                    loginContainer.style.display = 'none';
+                    mainContainer.style.display = 'flex';
+                } else {
+                    loginContainer.style.display = 'block';
+                    mainContainer.style.display = 'none';
+                    if (!loginUsername.value) loginUsername.value = storedUser || '';
+                }
+            }
         }
 
+        // Check login status on load
+        checkAuthStatus();
+
+        // Register Function
+        registerBtn.addEventListener('click', () => {
+            if(regUsername.value && regPassword.value && regConfirmPassword.value) {
+                if(regPassword.value !== regConfirmPassword.value) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+                localStorage.setItem('dtr_username', regUsername.value);
+                localStorage.setItem('dtr_password', regPassword.value);
+                alert('Registration Successful! Please login.');
+                checkAuthStatus();
+            } else {
+                alert('Please fill in all fields');
+            }
+        });
+
+        // Navigation Logic
+        goToRegisterBtn.addEventListener('click', () => {
+            loginContainer.style.display = 'none';
+            registerContainer.style.display = 'block';
+            backToLoginBtn.style.display = 'inline-block';
+        });
+
+        backToLoginBtn.addEventListener('click', () => {
+            registerContainer.style.display = 'none';
+            loginContainer.style.display = 'block';
+        });
+
         function attemptLogin() {
-            if (passInput.value === CORRECT_PASSCODE) {
-                if(usernameInput.value) localStorage.setItem('dtr_username', usernameInput.value);
-                localStorage.setItem('dtr_logged_in', 'true');
+            const storedPass = localStorage.getItem('dtr_password');
+            const storedUser = localStorage.getItem('dtr_username');
+            if (passInput.value === storedPass && loginUsername.value === storedUser) {
+                
+                if (rememberMeCheckbox.checked) {
+                    localStorage.setItem('dtr_logged_in', 'true');
+                    localStorage.setItem('dtr_remember_user', loginUsername.value);
+                } else {
+                    sessionStorage.setItem('dtr_logged_in', 'true');
+                    localStorage.removeItem('dtr_remember_user');
+                }
+                
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
             } else {
                 loginError.style.display = 'block';
             }
         }
+
+        // Forgot Password Logic
+        forgotBtn.addEventListener('click', () => {
+            if(confirm('Resetting the app will clear your password and require you to register again. Your time records will remain safe. Continue?')) {
+                localStorage.removeItem('dtr_password');
+                localStorage.removeItem('dtr_logged_in');
+                location.reload();
+            }
+        });
 
         // --- Biometric Logic ---
         async function attemptBiometric() {
@@ -300,7 +418,15 @@
                     localStorage.setItem('dtr_bio_id', bufferEncode(cred.rawId));
                 }
                 // Success
-                localStorage.setItem('dtr_logged_in', 'true');
+                
+                if (rememberMeCheckbox.checked) {
+                    localStorage.setItem('dtr_logged_in', 'true');
+                    localStorage.setItem('dtr_remember_user', loginUsername.value);
+                } else {
+                    sessionStorage.setItem('dtr_logged_in', 'true');
+                    localStorage.removeItem('dtr_remember_user');
+                }
+
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
             } catch (err) {
@@ -358,8 +484,9 @@
         
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('dtr_logged_in');
+            sessionStorage.removeItem('dtr_logged_in');
             mainContainer.style.display = 'none';
-            loginContainer.style.display = 'block';
+            checkAuthStatus(); // Re-evaluate to show login
             passInput.value = '';
         });
 
