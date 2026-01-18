@@ -269,12 +269,20 @@
         </div>
     </div>
 
-    <script type="module">
+    <script>
         // --- FIREBASE SETUP ---
+        // NOTE: To use Firebase, you must host this file (e.g., GitHub Pages) or use a local server.
+        // If opening directly (file://), keep these imports commented out to prevent white screen errors.
+        
+        /* 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        */
 
-        // TODO: Replace the following config with your own from the Firebase Console
+        let db; // Database reference (undefined when offline)
+
+        /*
+        // TODO: Uncomment this block when hosted online to enable Sync
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -284,14 +292,12 @@
             appId: "YOUR_APP_ID"
         };
 
-        let db;
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             console.log("Firebase initialized");
-        } catch (e) {
-            console.warn("Firebase config missing or invalid. Data will not sync.");
-        }
+        } catch (e) { console.warn(e); }
+        */
 
         // --- Login Logic ---
         // const CORRECT_PASSCODE = "1234"; // Removed hardcoded passcode
@@ -344,7 +350,7 @@
         }
 
         // --- Realtime Data Sync ---
-        let records = [];
+        let records = JSON.parse(localStorage.getItem('dtr_records')) || [];
         let unsubscribe;
 
         function setupRealtimeListener(username) {
@@ -575,7 +581,6 @@
         dateInput.valueAsDate = new Date();
 
         // Load records from local storage
-        let records = JSON.parse(localStorage.getItem('dtr_records')) || []; // Fallback to LocalStorage
 
         function renderTable(filterText = '') {
             tableBody.innerHTML = '';
