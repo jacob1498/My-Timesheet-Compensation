@@ -111,14 +111,14 @@
         .section-header:hover { background-color: rgba(0,0,0,0.03); }
         .section-header i { color: var(--primary-color); }
 
-        /* Notebook View Styles */
-        .notebook-table { width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; background: #fff; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); }
-        .notebook-table thead { display: none; }
-        .notebook-table tr { border-bottom: 1px solid #a4c3e3; transition: background 0.2s; }
-        .notebook-table tr:hover { background-color: #fdfdfd; }
-        .notebook-table td { padding: 15px; border: none; color: #333; }
-        .notebook-table td:first-child { border-left: 4px solid #ff7a7a; font-weight: bold; color: var(--primary-color); }
-        .notebook-table .delete-btn { background: transparent; color: #dc3545; padding: 0; text-decoration: underline; }
+        /* Mobile Swipe View */
+        .mobile-swipe-view { display: none; }
+        .day-card { background: var(--card-bg); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 0.8rem; position: relative; }
+        .day-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 0.5rem; }
+        .day-card-date { font-weight: 700; color: var(--primary-color); font-size: 1.1rem; }
+        .day-card-row { display: flex; justify-content: space-between; font-size: 0.95rem; }
+        .day-card-label { color: var(--text-muted); }
+        .day-card-val { font-weight: 600; color: var(--text-color); }
 
         /* Scrollable Table Wrapper */
         .table-responsive {
@@ -136,6 +136,10 @@
             .nav-btn span { display: block; font-size: 0.7rem; } /* Show text on mobile */
             .main-content { width: 100%; padding: 1rem; box-sizing: border-box; }
             
+            /* Swipe Feature Logic */
+            .table-responsive { display: none; } /* Hide table on mobile */
+            .mobile-swipe-view { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 1rem; padding: 0.5rem 0 1.5rem; -webkit-overflow-scrolling: touch; }
+            .day-card { min-width: 85%; scroll-snap-align: center; }
             .search-container { width: 140px; }
             .greeting { display: none; } /* Hide greeting on mobile to save space */
             
@@ -210,6 +214,10 @@
                         <p id="totalHoursDisplay">0.00</p>
                     </div>
                     <div class="dashboard-card">
+                        <h3>Overtime</h3>
+                        <p id="totalOTDisplay">0.00</p>
+                    </div>
+                    <div class="dashboard-card">
                         <h3>Days Worked</h3>
                         <p id="totalDaysDisplay">0</p>
                     </div>
@@ -238,7 +246,6 @@
                 <div id="recordListContainer" style="display: none;">
                     <div style="display: flex; gap: 10px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;">
                         <input type="month" id="monthFilter" style="width: auto; flex-grow: 1;">
-                        <button id="toggleViewBtn" style="background-color: #6c757d; font-size: 0.9rem; padding: 0.6rem;"><i class="fas fa-book"></i> Notebook View</button>
                     </div>
                     <div class="table-responsive">
                         <table id="dtrTable">
@@ -247,7 +254,8 @@
                                     <th>Date</th>
                                     <th>Time In</th>
                                     <th>Time Out</th>
-                                    <th>Hours</th>
+                                    <th>Total</th>
+                                    <th>OT</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -255,6 +263,10 @@
                                 <!-- Rows will be added here via JS -->
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Mobile Swipe Container -->
+                    <div id="mobileSwipeView" class="mobile-swipe-view">
+                        <!-- Day Cards will be injected here -->
                     </div>
                 </div>
             </div>
@@ -352,7 +364,6 @@
         const darkModeToggle = document.getElementById('darkModeToggle');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const monthFilter = document.getElementById('monthFilter');
-        const toggleViewBtn = document.getElementById('toggleViewBtn');
 
         // Load saved settings
         const savedAvatar = localStorage.getItem('dtr_avatar');
@@ -609,6 +620,8 @@
 
         function renderTable(filterText = '') {
             tableBody.innerHTML = '';
+            const mobileSwipeView = document.getElementById('mobileSwipeView');
+            mobileSwipeView.innerHTML = '';
             records.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
             
             let filteredRecords = records.filter(r => r.date.includes(filterText));
@@ -618,6 +631,7 @@
             }
             
             let totalHours = 0;
+            let totalOT = 0;
 
             filteredRecords.forEach((record, index) => {
                 const row = document.createElement('tr');
@@ -627,8 +641,15 @@
                 const end = new Date(`1970-01-01T${record.timeOut}:00`);
                 let diff = (end - start) / 1000 / 60 / 60; // Convert ms to hours
                 if (diff < 0) diff += 24; // Handle overnight shifts
+
+                // OT Calculation (Threshold: 8 hours)
+                let otHours = 0;
+                if (diff > 8) {
+                    otHours = diff - 8;
+                }
                 
                 totalHours += diff;
+                totalOT += otHours;
 
                 // Ensure record has an ID for deletion (fallback for local data)
                 const recId = record.id || `local_${index}`;
@@ -637,13 +658,38 @@
                     <td data-label="Date">${record.date}</td>
                     <td data-label="Time In">${record.timeIn}</td>
                     <td data-label="Time Out">${record.timeOut}</td>
-                    <td data-label="Hours">${diff.toFixed(2)}</td>
+                    <td data-label="Total">${diff.toFixed(2)}</td>
+                    <td data-label="OT" style="color: ${otHours > 0 ? '#dc3545' : 'inherit'}; font-weight: ${otHours > 0 ? 'bold' : 'normal'};">${otHours.toFixed(2)}</td>
                     <td data-label="Action"><button class="delete-btn" onclick="deleteRecord('${recId}')"><i class="fas fa-trash-alt"></i> Delete</button></td>
                 `;
                 tableBody.appendChild(row);
+
+                // Create Mobile Day Card
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                card.innerHTML = `
+                    <div class="day-card-header">
+                        <div class="day-card-date">${new Date(record.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                        <button class="delete-btn" onclick="deleteRecord('${recId}')" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="day-card-row">
+                        <span class="day-card-label">Shift</span>
+                        <span class="day-card-val">${record.timeIn} - ${record.timeOut}</span>
+                    </div>
+                    <div class="day-card-row">
+                        <span class="day-card-label">Total Hours</span>
+                        <span class="day-card-val">${diff.toFixed(2)} hrs</span>
+                    </div>
+                    <div class="day-card-row">
+                        <span class="day-card-label">Overtime</span>
+                        <span class="day-card-val" style="color: ${otHours > 0 ? '#dc3545' : 'inherit'};">${otHours.toFixed(2)} hrs</span>
+                    </div>
+                `;
+                mobileSwipeView.appendChild(card);
             });
             
             document.getElementById('totalHoursDisplay').textContent = totalHours.toFixed(2);
+            document.getElementById('totalOTDisplay').textContent = totalOT.toFixed(2);
             document.getElementById('totalDaysDisplay').textContent = filteredRecords.length;
         }
 
@@ -702,6 +748,59 @@
                 if (db && id && !id.startsWith('local_')) {
                     await deleteDoc(doc(db, "dtr_records", id));
                 } else {
+                    // Delete from LocalStorage
+                    records = records.filter((r, index) => (r.id || `local_${index}`) !== id);
+                    localStorage.setItem('dtr_records', JSON.stringify(records));
+                    renderTable(searchInput.value);
+                }
+            }
+        }
+
+        clearAllBtn.addEventListener('click', async () => {
+            if(confirm('DANGER: This will delete ALL your records permanently. Are you sure?')) {
+                // If connected to DB, delete all docs (simple iteration)
+                if (db) {
+                    for (const rec of records) {
+                        if (rec.id && !rec.id.startsWith('local_')) {
+                            try { await deleteDoc(doc(db, "dtr_records", rec.id)); } catch(e){}
+                        }
+                    }
+                }
+                // Clear local
+                records = [];
+                localStorage.setItem('dtr_records', JSON.stringify(records));
+                renderTable();
+                alert('All records cleared.');
+            }
+        });
+
+        addBtn.addEventListener('click', addRecord);
+        searchInput.addEventListener('input', (e) => renderTable(e.target.value));
+        
+        // Initial render
+        renderTable();
+
+        // PWA Manifest Generation (Makes the app installable)
+        const manifest = {
+            "name": "My Daily Time Record",
+            "short_name": "My-DTR",
+            "start_url": window.location.href,
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#007bff",
+            "icons": [{
+                "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }]
+        };
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
+        document.head.appendChild(link);
+    </script>
+</body>
+</html>         } else {
                     // Delete from LocalStorage
                     records = records.filter((r, index) => (r.id || `local_${index}`) !== id);
                     localStorage.setItem('dtr_records', JSON.stringify(records));
