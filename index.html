@@ -323,6 +323,7 @@
                             <input type="number" id="yearFilter" placeholder="YYYY" style="display: none; width: 60px;">
                             <i class="fas fa-filter" style="margin-left: 5px;"></i>
                         </div>
+                        <button id="shareBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: #17a2b8; color: white; border: none; border-radius: 20px;"><i class="fas fa-share-alt"></i> Share</button>
                         <button id="downloadPdfBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: #dc3545; color: white; border: none; border-radius: 20px;"><i class="fas fa-file-pdf"></i> PDF</button>
                         <button id="toggleCalendarBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: var(--input-bg); color: var(--text-color);"><i class="fas fa-calendar-alt"></i> View</button>
                         <button id="toggleChartBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: var(--input-bg); color: var(--text-color);"><i class="fas fa-chart-bar"></i> Chart</button>
@@ -364,8 +365,15 @@
             <div id="profileSection" class="section">
                 <h2>My Profile</h2>
                 <div style="text-align: center; margin-top: 2rem;">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Avatar" class="avatar" id="profileAvatar" title="Click to change">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Avatar" class="avatar" id="profileAvatar" title="Click to change" style="width: 120px; height: 120px; border-width: 4px;">
                     <p style="color: var(--text-muted);">Click image to update avatar</p>
+                    
+                    <div class="form-group" style="flex-direction: column; align-items: center; margin-top: 2rem; border-bottom: none;">
+                        <input type="text" id="profileName" placeholder="Full Name" style="text-align: center; font-weight: bold; font-size: 1.2rem; margin-bottom: 0.5rem; background: transparent; border: none; border-bottom: 2px solid var(--border-color); border-radius: 0;">
+                        <input type="text" id="profileJob" placeholder="Job Title" style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; background: transparent; border: none; width: 80%;">
+                        <textarea id="profileBio" placeholder="Write a short bio about yourself..." style="width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); resize: vertical; min-height: 100px; font-family: inherit;"></textarea>
+                        <button id="saveProfileBtn" style="margin-top: 1.5rem; width: 100%;">Save Profile Details</button>
+                    </div>
                 </div>
             </div>
 
@@ -467,10 +475,15 @@
         const toggleCalendarBtn = document.getElementById('toggleCalendarBtn');
         const toggleChartBtn = document.getElementById('toggleChartBtn');
         const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const shareBtn = document.getElementById('shareBtn');
         const enableNotifyBtn = document.getElementById('enableNotifyBtn');
         const clockInNow = document.getElementById('clockInNow');
         const clockOutNow = document.getElementById('clockOutNow');
         const hourlyRateInput = document.getElementById('hourlyRate');
+        const profileName = document.getElementById('profileName');
+        const profileJob = document.getElementById('profileJob');
+        const profileBio = document.getElementById('profileBio');
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
 
         // Load saved settings
         const savedAvatar = localStorage.getItem('dtr_avatar');
@@ -490,6 +503,13 @@
         if (savedRate) {
             hourlyRateInput.value = savedRate;
         }
+
+        // Load Profile Details
+        const savedProfile = JSON.parse(localStorage.getItem('dtr_profile_details')) || {};
+        if (savedProfile.name) profileName.value = savedProfile.name;
+        if (savedProfile.job) profileJob.value = savedProfile.job;
+        if (savedProfile.bio) profileBio.value = savedProfile.bio;
+        if (savedProfile.name) document.getElementById('topGreeting').textContent = `Hello, ${savedProfile.name.split(' ')[0]}`;
 
         // Load Dark Mode
         if (localStorage.getItem('dtr_dark_mode') === 'true') {
@@ -774,7 +794,11 @@
             mobileSwipeView.innerHTML = '';
             records.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
             
-            let filteredRecords = records.filter(r => r.date.includes(filterText));
+            // Enhanced Search: Date OR Notes
+            let filteredRecords = records.filter(r => 
+                r.date.includes(filterText) || 
+                (r.notes && r.notes.toLowerCase().includes(filterText.toLowerCase()))
+            );
             
             // Filter Logic
             if (filterType.value === 'month' && monthFilter.value) {
@@ -1082,23 +1106,59 @@
 
         // PDF Download Logic
         downloadPdfBtn.addEventListener('click', () => {
-            // Temporarily show table for PDF generation if hidden
+            // 1. Force visibility of the table container
+            const listContainer = document.getElementById('recordListContainer');
             const tableDiv = document.querySelector('.table-responsive');
-            const wasHidden = tableDiv.style.display === 'none';
-            if (wasHidden) tableDiv.style.display = 'block';
+            
+            // Store original states
+            const originalListDisplay = listContainer.style.display;
+            const originalTableDisplay = tableDiv.style.display;
+
+            // Make visible for capture
+            listContainer.style.display = 'block';
+            tableDiv.style.display = 'block'; // Overrides mobile 'none'
 
             const element = document.getElementById('dtrTable');
             const opt = {
                 margin: 0.5,
                 filename: 'my-dtr-records.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                if (wasHidden) tableDiv.style.display = 'none';
+                // Restore original states
+                listContainer.style.display = originalListDisplay;
+                tableDiv.style.display = originalTableDisplay;
             });
+        });
+
+        // Share Logic
+        shareBtn.addEventListener('click', async () => {
+            const totalHours = document.getElementById('totalHoursDisplay').textContent;
+            const salary = document.getElementById('totalSalaryDisplay').textContent;
+            const days = document.getElementById('totalDaysDisplay').textContent;
+            
+            const shareData = {
+                title: 'My DTR Summary',
+                text: `My Work Summary:\nDays Worked: ${days}\nTotal Hours: ${totalHours}\nEstimated Salary: ${salary}`,
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (err) { console.log('Share failed', err); }
+            } else {
+                alert(shareData.text); // Fallback
+            }
+        });
+
+        // Save Profile Logic
+        saveProfileBtn.addEventListener('click', () => {
+            const profileData = { name: profileName.value, job: profileJob.value, bio: profileBio.value };
+            localStorage.setItem('dtr_profile_details', JSON.stringify(profileData));
+            if (profileName.value) document.getElementById('topGreeting').textContent = `Hello, ${profileName.value.split(' ')[0]}`;
+            alert('Profile saved!');
         });
 
         clockInNow.addEventListener('click', () => {
