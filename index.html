@@ -64,7 +64,7 @@
         button i { margin-right: 0.5rem; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { border-bottom: 1px solid var(--border-color); padding: 12px; text-align: left; color: var(--text-color); }
+        th, td { border-bottom: 1px solid var(--border-color); padding: 12px; text-align: left; color: var(--text-color); white-space: nowrap; }
         th { background-color: var(--th-bg); font-weight: 600; color: var(--text-color); }
         
         .delete-btn { background-color: #dc3545; padding: 0.4rem 0.8rem; font-size: 0.9rem; }
@@ -120,6 +120,12 @@
         .notebook-table td:first-child { border-left: 4px solid #ff7a7a; font-weight: bold; color: var(--primary-color); }
         .notebook-table .delete-btn { background: transparent; color: #dc3545; padding: 0; text-decoration: underline; }
 
+        /* Scrollable Table Wrapper */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         /* Mobile Responsive Styles */
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
@@ -137,12 +143,6 @@
             .input-wrapper { width: 100%; }
             button#addBtn { width: 100%; margin-top: 0.5rem; }
 
-            /* Responsive Table (Card View) */
-            thead { display: none; }
-            tr { display: block; border: 1px solid var(--border-color); margin-bottom: 1rem; border-radius: 4px; background: var(--card-bg); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-            td { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); text-align: right; padding: 10px; }
-            td:last-child { border-bottom: none; }
-            td::before { content: attr(data-label); font-weight: 600; color: var(--text-muted); margin-right: 1rem; }
         }
     </style>
 </head>
@@ -240,20 +240,22 @@
                         <input type="month" id="monthFilter" style="width: auto; flex-grow: 1;">
                         <button id="toggleViewBtn" style="background-color: #6c757d; font-size: 0.9rem; padding: 0.6rem;"><i class="fas fa-book"></i> Notebook View</button>
                     </div>
-                    <table id="dtrTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time In</th>
-                                <th>Time Out</th>
-                                <th>Hours</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Rows will be added here via JS -->
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table id="dtrTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Hours</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be added here via JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
