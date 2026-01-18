@@ -128,6 +128,7 @@
         .filter-minimal:focus-within { border-color: var(--primary-color); background: var(--card-bg); }
         .filter-minimal input { border: none; background: transparent; padding: 0; width: auto; font-family: inherit; color: var(--text-color); outline: none; box-shadow: none; }
         .filter-minimal i { color: var(--text-muted); }
+        .filter-minimal select { border: none; background: transparent; outline: none; color: var(--text-muted); font-size: 0.9rem; margin-right: 0.5rem; cursor: pointer; }
         
         /* Warning Styles */
         .warning-row { background-color: #fff3cd !important; }
@@ -258,6 +259,18 @@
                             <label for="timeOut">Time Out <i class="fas fa-clock" id="clockOutNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i></label>
                             <input type="time" id="timeOut">
                         </div>
+                        <div class="input-wrapper">
+                            <label for="breakDuration">Break</label>
+                            <select id="breakDuration">
+                                <option value="0">None</option>
+                                <option value="0.5">30 mins</option>
+                                <option value="1">1 Hour</option>
+                            </select>
+                        </div>
+                        <div class="input-wrapper" style="flex-grow: 1;">
+                            <label for="notes">Notes</label>
+                            <input type="text" id="notes" placeholder="Task details...">
+                        </div>
                         <button id="addBtn"><i class="fas fa-plus-circle"></i> Add Entry</button>
                     </div>
                 </div>
@@ -266,8 +279,11 @@
                 <div id="recordListContainer" style="display: none;">
                     <div style="margin-bottom: 1rem;">
                         <div class="filter-minimal">
-                            <i class="fas fa-filter"></i>
+                            <select id="filterType"><option value="month">Month</option><option value="date">Day</option><option value="year">Year</option></select>
                             <input type="month" id="monthFilter">
+                            <input type="date" id="dateFilter" style="display: none;">
+                            <input type="number" id="yearFilter" placeholder="YYYY" style="display: none; width: 60px;">
+                            <i class="fas fa-filter" style="margin-left: 5px;"></i>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -279,6 +295,7 @@
                                     <th>Time Out</th>
                                     <th>Total</th>
                                     <th>OT</th>
+                                    <th>Notes</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -393,6 +410,9 @@
         const darkModeToggle = document.getElementById('darkModeToggle');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const monthFilter = document.getElementById('monthFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const yearFilter = document.getElementById('yearFilter');
+        const filterType = document.getElementById('filterType');
         const clockInNow = document.getElementById('clockInNow');
         const clockOutNow = document.getElementById('clockOutNow');
         const hourlyRateInput = document.getElementById('hourlyRate');
@@ -634,7 +654,7 @@
                 localStorage.setItem('dtr_dark_mode', 'false');
             }
         });
-        
+
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('dtr_logged_in');
             sessionStorage.removeItem('dtr_logged_in');
@@ -647,6 +667,8 @@
         const dateInput = document.getElementById('date');
         const timeInInput = document.getElementById('timeIn');
         const timeOutInput = document.getElementById('timeOut');
+        const breakDurationInput = document.getElementById('breakDuration');
+        const notesInput = document.getElementById('notes');
         const addBtn = document.getElementById('addBtn');
         const tableBody = document.querySelector('#dtrTable tbody');
         const searchInput = document.getElementById('searchInput');
@@ -666,8 +688,13 @@
             
             let filteredRecords = records.filter(r => r.date.includes(filterText));
             
-            if (monthFilter.value) {
+            // Filter Logic
+            if (filterType.value === 'month' && monthFilter.value) {
                 filteredRecords = filteredRecords.filter(r => r.date.startsWith(monthFilter.value));
+            } else if (filterType.value === 'date' && dateFilter.value) {
+                filteredRecords = filteredRecords.filter(r => r.date === dateFilter.value);
+            } else if (filterType.value === 'year' && yearFilter.value) {
+                filteredRecords = filteredRecords.filter(r => r.date.startsWith(yearFilter.value));
             }
             
             let totalHours = 0;
@@ -689,6 +716,11 @@
                     const end = new Date(`1970-01-01T${record.timeOut}:00`);
                     diff = (end - start) / 1000 / 60 / 60; // Convert ms to hours
                     if (diff < 0) diff += 24; // Handle overnight shifts
+
+                    // Break Deduction
+                    const breakTime = parseFloat(record.breakDuration) || 0;
+                    diff -= breakTime;
+                    if (diff < 0) diff = 0;
 
                     // OT Calculation (Threshold: 8 hours)
                     if (diff > 8) {
@@ -726,6 +758,7 @@
                     <td data-label="Time Out">${record.timeOut || '---'}</td>
                     <td data-label="Total">${displayTotal} ${warningHtml}</td>
                     <td data-label="OT" style="color: ${otHours > 0 ? '#dc3545' : 'inherit'}; font-weight: ${otHours > 0 ? 'bold' : 'normal'};">${displayOT}</td>
+                    <td data-label="Notes" style="font-size: 0.9rem; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${record.notes || ''}</td>
                     <td data-label="Action"><button class="edit-btn" onclick="editRecord('${recId}')"><i class="fas fa-edit"></i></button> <button class="delete-btn" onclick="deleteRecord('${recId}')"><i class="fas fa-trash-alt"></i></button></td>
                 `;
                 tableBody.appendChild(row);
@@ -752,9 +785,14 @@
                         <span class="day-card-val">${displayTotal} ${record.timeOut ? 'hrs' : ''} ${warningHtml}</span>
                     </div>
                     <div class="day-card-row">
+                        <span class="day-card-label">Break</span>
+                        <span class="day-card-val">${record.breakDuration == 1 ? '1 hr' : (record.breakDuration == 0.5 ? '30 mins' : 'None')}</span>
+                    </div>
+                    <div class="day-card-row">
                         <span class="day-card-label">Overtime</span>
                         <span class="day-card-val" style="color: ${otHours > 0 ? '#dc3545' : 'inherit'};">${displayOT} ${record.timeOut ? 'hrs' : ''}</span>
                     </div>
+                    ${record.notes ? `<div class="day-card-row" style="border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.5rem; display: block;"><span class="day-card-label">Notes:</span> <span style="color: var(--text-color);">${record.notes}</span></div>` : ''}
                 `;
                 mobileSwipeView.appendChild(card);
             });
@@ -763,13 +801,27 @@
             document.getElementById('totalHoursDisplay').textContent = totalHours.toFixed(2);
             
             const rate = parseFloat(localStorage.getItem('dtr_hourly_rate')) || 0;
-            document.getElementById('totalSalaryDisplay').textContent = (totalHours * rate).toFixed(2);
+            document.getElementById('totalSalaryDisplay').textContent = '₱' + (totalHours * rate).toFixed(2);
             
             document.getElementById('totalOTDisplay').textContent = totalOT.toFixed(2);
             document.getElementById('totalDaysDisplay').textContent = filteredRecords.length;
         }
 
         monthFilter.addEventListener('change', () => renderTable(searchInput.value));
+        dateFilter.addEventListener('change', () => renderTable(searchInput.value));
+        yearFilter.addEventListener('input', () => renderTable(searchInput.value));
+        
+        filterType.addEventListener('change', (e) => {
+            monthFilter.style.display = 'none';
+            dateFilter.style.display = 'none';
+            yearFilter.style.display = 'none';
+            
+            if(e.target.value === 'month') monthFilter.style.display = 'block';
+            else if(e.target.value === 'date') dateFilter.style.display = 'block';
+            else if(e.target.value === 'year') yearFilter.style.display = 'block';
+            
+            renderTable(searchInput.value);
+        });
 
         clockInNow.addEventListener('click', () => {
             const now = new Date();
@@ -799,7 +851,9 @@
                 date: dateInput.value,
                 timeIn: timeInInput.value,
                 timeOut: timeOutInput.value,
-                username: username
+                username: username,
+                breakDuration: breakDurationInput.value,
+                notes: notesInput.value
             };
             
             if (db && username) {
@@ -831,6 +885,8 @@
             dateInput.valueAsDate = new Date();
             timeInInput.value = '';
             timeOutInput.value = '';
+            breakDurationInput.value = '0';
+            notesInput.value = '';
             editingId = null;
             addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Entry';
         }
@@ -841,6 +897,8 @@
                 dateInput.value = record.date;
                 timeInInput.value = record.timeIn;
                 timeOutInput.value = record.timeOut;
+                breakDurationInput.value = record.breakDuration || 0;
+                notesInput.value = record.notes || '';
                 editingId = id;
                 addBtn.innerHTML = '<i class="fas fa-save"></i> Update Entry';
                 
