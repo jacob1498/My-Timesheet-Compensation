@@ -58,7 +58,10 @@
     </div>
 
     <div class="container" id="mainContainer" style="display: none;">
-        <h1>Daily Time Record</h1>
+        <div style="position: relative; margin-bottom: 1.5rem;">
+            <h1 style="margin: 0;">Daily Time Record</h1>
+            <button id="logoutBtn" style="position: absolute; top: 0; right: 0; background-color: #6c757d; padding: 0.4rem 0.8rem; font-size: 0.9rem;">Logout</button>
+        </div>
         
         <div class="form-group">
             <div class="input-wrapper">
@@ -102,8 +105,15 @@
         const passInput = document.getElementById('passcode');
         const loginError = document.getElementById('loginError');
 
+        // Check login status on load
+        if (localStorage.getItem('dtr_logged_in') === 'true') {
+            loginContainer.style.display = 'none';
+            mainContainer.style.display = 'block';
+        }
+
         function attemptLogin() {
             if (passInput.value === CORRECT_PASSCODE) {
+                localStorage.setItem('dtr_logged_in', 'true');
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'block';
             } else {
@@ -151,6 +161,7 @@
                     localStorage.setItem('dtr_bio_id', bufferEncode(cred.rawId));
                 }
                 // Success
+                localStorage.setItem('dtr_logged_in', 'true');
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'block';
             } catch (err) {
@@ -167,6 +178,13 @@
         loginBtn.addEventListener('click', attemptLogin);
         bioBtn.addEventListener('click', attemptBiometric);
         passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') attemptLogin(); });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('dtr_logged_in');
+            mainContainer.style.display = 'none';
+            loginContainer.style.display = 'block';
+            passInput.value = '';
+        });
 
         const dateInput = document.getElementById('date');
         const timeInInput = document.getElementById('timeIn');
