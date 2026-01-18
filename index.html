@@ -38,13 +38,14 @@
         
         /* Layout for Sidebar */
         .app-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
-        .sidebar { width: 220px; background: var(--card-bg); padding: 1.5rem; border-radius: 16px; display: flex; flex-direction: column; gap: 0.8rem; border: 1px solid var(--border-color); }
+        .sidebar { width: 80px; background: var(--card-bg); padding: 1.5rem 0.5rem; border-radius: 16px; display: flex; flex-direction: column; gap: 0.8rem; border: 1px solid var(--border-color); align-items: center; transition: width 0.3s; }
         .main-content { flex: 1; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); min-height: 500px; }
         
-        .nav-btn { text-align: left; background: transparent; color: var(--text-muted); padding: 0.8rem 1rem; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
-        .nav-btn:hover { background-color: var(--bg-color); color: var(--primary-color); filter: none; }
+        .nav-btn { text-align: center; background: transparent; color: var(--text-muted); padding: 0.8rem; border-radius: 12px; font-weight: 500; transition: all 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; }
+        .nav-btn:hover { background-color: var(--bg-color); color: var(--primary-color); filter: none; transform: scale(1.05); }
         .nav-btn.active { background-color: var(--primary-color); color: white; box-shadow: 0 4px 12px rgba(0,123,255,0.2); }
-        .nav-btn i { width: 20px; text-align: center; margin-right: 10px; }
+        .nav-btn i { font-size: 1.3rem; margin: 0; }
+        .nav-btn span { display: none; } /* Hide text on desktop */
 
         .section { display: none; }
         .section.active { display: block; animation: fadeIn 0.3s; }
@@ -104,8 +105,10 @@
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
             .app-layout { flex-direction: column; }
-            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 0.5rem; box-sizing: border-box; }
-            .nav-btn { padding: 0.5rem; font-size: 0.9rem; white-space: nowrap; }
+            .sidebar { width: 100%; flex-direction: row; justify-content: space-around; padding: 0.5rem; box-sizing: border-box; overflow-x: visible; }
+            .nav-btn { width: auto; flex-direction: column; gap: 4px; padding: 0.5rem; font-size: 0.8rem; }
+            .nav-btn i { font-size: 1.2rem; }
+            .nav-btn span { display: block; font-size: 0.7rem; } /* Show text on mobile */
             .main-content { width: 100%; padding: 1rem; box-sizing: border-box; }
             
             .search-container { width: 140px; }
@@ -160,12 +163,12 @@
     <div class="app-layout" id="mainContainer" style="display: none;">
         <!-- Sidebar -->
         <div class="sidebar">
-            <h3 style="text-align: center; margin: 0.5rem 0 1rem; color: var(--primary-color);">My-DTR</h3>
-            <button class="nav-btn active" onclick="showSection('home')"><i class="fas fa-home"></i> Home</button>
-            <button class="nav-btn" onclick="showSection('profile')"><i class="fas fa-user"></i> Profile</button>
-            <button class="nav-btn" onclick="showSection('settings')"><i class="fas fa-cog"></i> Settings</button>
+            <h3 style="text-align: center; margin: 0.5rem 0 1rem; color: var(--primary-color); font-size: 0.8rem;">DTR</h3>
+            <button class="nav-btn active" onclick="showSection('home')" title="Home"><i class="fas fa-home"></i> <span>Home</span></button>
+            <button class="nav-btn" onclick="showSection('profile')" title="Profile"><i class="fas fa-user"></i> <span>Profile</span></button>
+            <button class="nav-btn" onclick="showSection('settings')" title="Settings"><i class="fas fa-cog"></i> <span>Settings</span></button>
             <div style="flex-grow: 1;"></div>
-            <button id="logoutBtn" class="nav-btn" style="color: #dc3545;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            <button id="logoutBtn" class="nav-btn" style="color: #dc3545;" title="Logout"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
         </div>
         
         <!-- Content Area -->
