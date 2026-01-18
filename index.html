@@ -79,8 +79,8 @@
         
         /* Top Bar & Search */
         .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
-        .greeting { font-weight: 600; font-size: 1.1rem; margin-right: 1rem; color: var(--primary-color); }
-        .search-container { position: relative; width: 350px; }
+        .greeting { font-weight: 600; font-size: 1.1rem; margin-right: 1rem; color: var(--primary-color); white-space: nowrap; }
+        .search-container { position: relative; flex: 1; margin: 0 1.5rem; max-width: 600px; }
         .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
         .search-container input { width: 100%; padding-left: 40px; border-radius: 20px; }
         .mini-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid var(--primary-color); }
@@ -106,7 +106,11 @@
         
         /* Dashboard Styles */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .dashboard-card { background: var(--card-bg); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border-color); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s; }
+        .dashboard-card { background: var(--card-bg); padding: 1.5rem; border-radius: 16px; border: none; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.2s; position: relative; overflow: hidden; }
+        .dashboard-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--primary-color); }
+        .dashboard-card:nth-child(2)::before { background: #dc3545; }
+        .dashboard-card:nth-child(3)::before { background: #28a745; }
+        .dashboard-card:nth-child(4)::before { background: #ffc107; }
         .dashboard-card:hover { transform: translateY(-2px); }
         .dashboard-card h3 { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         .dashboard-card p { margin: 0; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
@@ -130,6 +134,23 @@
         .filter-minimal i { color: var(--text-muted); }
         .filter-minimal select { border: none; background: transparent; outline: none; color: var(--text-muted); font-size: 0.9rem; margin-right: 0.5rem; cursor: pointer; }
         
+        /* Calendar View */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 1rem; }
+        .calendar-day-header { text-align: center; font-weight: bold; font-size: 0.8rem; color: var(--text-muted); padding: 5px 0; }
+        .calendar-day { aspect-ratio: 1; border: 1px solid var(--border-color); border-radius: 12px; padding: 5px; font-size: 0.9rem; position: relative; cursor: pointer; transition: background 0.2s; background: var(--card-bg); }
+        .calendar-day:hover { background-color: var(--input-bg); }
+        .calendar-day.has-record { border-color: var(--primary-color); background-color: rgba(0, 123, 255, 0.05); }
+        .calendar-day.today { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .calendar-day .day-number { font-weight: 600; position: absolute; top: 5px; left: 8px; }
+        .calendar-day .day-hours { font-size: 0.7rem; position: absolute; bottom: 5px; right: 8px; color: var(--text-muted); font-weight: 600; }
+        .calendar-day.today .day-hours { color: rgba(255,255,255,0.9); }
+
+        /* Welcome Banner */
+        .welcome-banner { background: linear-gradient(135deg, var(--primary-color), #0056b3); color: white; padding: 1.5rem 2rem; border-radius: 16px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 20px rgba(0, 123, 255, 0.2); }
+        .welcome-text h2 { margin: 0; text-align: left; color: white; font-size: 1.5rem; }
+        .welcome-text p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9rem; }
+        .welcome-time { font-size: 2.2rem; font-weight: 700; letter-spacing: -1px; }
+
         /* Warning Styles */
         .warning-row { background-color: #fff3cd !important; }
         .warning-text { color: #856404; font-size: 0.8rem; margin-top: 4px; display: block; }
@@ -150,6 +171,7 @@
             .nav-btn span { display: block; font-size: 0.7rem; } /* Show text on mobile */
             .main-content { width: 100%; padding: 1rem; box-sizing: border-box; }
             
+            .welcome-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
             /* Swipe Feature Logic */
             .table-responsive { display: none; } /* Hide table on mobile */
             .mobile-swipe-view { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 1rem; padding: 0.5rem 0 1.5rem; -webkit-overflow-scrolling: touch; }
@@ -221,6 +243,15 @@
             
             <!-- Home Section -->
             <div id="homeSection" class="section active">
+                <!-- Welcome Banner -->
+                <div class="welcome-banner">
+                    <div class="welcome-text">
+                        <h2 id="bannerGreeting">Hello!</h2>
+                        <p id="bannerDate">Monday, Jan 1</p>
+                    </div>
+                    <div class="welcome-time" id="bannerTime">00:00</div>
+                </div>
+
                 <div id="alertBox" style="display:none; background: #fff3cd; color: #856404; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #ffeeba;">
                     <i class="fas fa-exclamation-circle"></i> <strong>Reminder:</strong> You have a shift exceeding 12 hours without a Punch Out!
                 </div>
@@ -277,7 +308,7 @@
 
                 <div class="section-header" onclick="toggleSection('recordListContainer')"><i class="fas fa-list"></i> Record List <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.9rem; color: var(--text-muted);"></i></div>
                 <div id="recordListContainer" style="display: none;">
-                    <div style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div class="filter-minimal">
                             <select id="filterType"><option value="month">Month</option><option value="date">Day</option><option value="year">Year</option></select>
                             <input type="month" id="monthFilter">
@@ -285,6 +316,7 @@
                             <input type="number" id="yearFilter" placeholder="YYYY" style="display: none; width: 60px;">
                             <i class="fas fa-filter" style="margin-left: 5px;"></i>
                         </div>
+                        <button id="toggleCalendarBtn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; background: var(--input-bg); color: var(--text-color);"><i class="fas fa-calendar-alt"></i> View</button>
                     </div>
                     <div class="table-responsive">
                         <table id="dtrTable">
@@ -307,6 +339,10 @@
                     <!-- Mobile Swipe Container -->
                     <div id="mobileSwipeView" class="mobile-swipe-view">
                         <!-- Day Cards will be injected here -->
+                    </div>
+                    <!-- Calendar View Container -->
+                    <div id="calendarView" style="display: none;">
+                        <!-- Calendar injected via JS -->
                     </div>
                 </div>
             </div>
@@ -342,6 +378,8 @@
                         <span style="font-weight: 500;">Dark Mode</span>
                     </div>
                     
+                    <button id="enableNotifyBtn" style="width: 100%; margin-top: 1rem; background-color: #17a2b8;"><i class="fas fa-bell"></i> Enable Daily Reminders</button>
+
                     <button id="clearAllBtn" style="width: 100%; margin-top: 2rem; background-color: #dc3545;"><i class="fas fa-trash"></i> Clear All Records</button>
                 </div>
             </div>
@@ -413,6 +451,8 @@
         const dateFilter = document.getElementById('dateFilter');
         const yearFilter = document.getElementById('yearFilter');
         const filterType = document.getElementById('filterType');
+        const toggleCalendarBtn = document.getElementById('toggleCalendarBtn');
+        const enableNotifyBtn = document.getElementById('enableNotifyBtn');
         const clockInNow = document.getElementById('clockInNow');
         const clockOutNow = document.getElementById('clockOutNow');
         const hourlyRateInput = document.getElementById('hourlyRate');
@@ -480,6 +520,7 @@
                 if (localStorage.getItem('dtr_logged_in') === 'true' || sessionStorage.getItem('dtr_logged_in') === 'true') {
                     loginContainer.style.display = 'none';
                     mainContainer.style.display = 'flex';
+                    checkDailyEntryReminder(); // Check for 24h inactivity
                     setupRealtimeListener(storedUser); // Start Sync
                 } else {
                     loginContainer.style.display = 'block';
@@ -535,6 +576,7 @@
                 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
+                checkDailyEntryReminder();
                 setupRealtimeListener(loginUsername.value); // Start Sync
             } else {
                 loginError.style.display = 'block';
@@ -664,6 +706,26 @@
             passInput.value = '';
         });
 
+        // Notification Logic
+        enableNotifyBtn.addEventListener('click', () => {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") alert("Notifications enabled!");
+                });
+            } else { alert("Notifications not supported on this browser."); }
+        });
+
+        function checkDailyEntryReminder() {
+            if (records.length === 0) return;
+            const lastRecord = records.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            const lastDate = new Date(lastRecord.date);
+            const now = new Date();
+            const diffHours = (now - lastDate) / (1000 * 60 * 60);
+            if (diffHours > 24 && Notification.permission === "granted") {
+                new Notification("My-DTR Reminder", { body: "You haven't added a time entry in over 24 hours!", icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" });
+            }
+        }
+
         const dateInput = document.getElementById('date');
         const timeInInput = document.getElementById('timeIn');
         const timeOutInput = document.getElementById('timeOut');
@@ -675,6 +737,17 @@
 
         // Initialize date input to today
         dateInput.valueAsDate = new Date();
+
+        // Update Banner Time
+        function updateBanner() {
+            const now = new Date();
+            document.getElementById('bannerTime').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            document.getElementById('bannerDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+            const user = localStorage.getItem('dtr_username') || 'User';
+            document.getElementById('bannerGreeting').textContent = `Hello, ${user}!`;
+        }
+        setInterval(updateBanner, 1000);
+        updateBanner();
 
         // Load records from local storage
 
@@ -805,6 +878,8 @@
             
             document.getElementById('totalOTDisplay').textContent = totalOT.toFixed(2);
             document.getElementById('totalDaysDisplay').textContent = filteredRecords.length;
+
+            renderCalendar(records); // Update calendar if visible
         }
 
         monthFilter.addEventListener('change', () => renderTable(searchInput.value));
@@ -822,6 +897,61 @@
             
             renderTable(searchInput.value);
         });
+
+        // Calendar Logic
+        let isCalendarView = false;
+        toggleCalendarBtn.addEventListener('click', () => {
+            isCalendarView = !isCalendarView;
+            const tableDiv = document.querySelector('.table-responsive');
+            const swipeDiv = document.getElementById('mobileSwipeView');
+            const calDiv = document.getElementById('calendarView');
+            
+            if (isCalendarView) {
+                tableDiv.style.display = 'none';
+                swipeDiv.style.display = 'none';
+                calDiv.style.display = 'block';
+                toggleCalendarBtn.innerHTML = '<i class="fas fa-list"></i> List';
+                renderCalendar(records);
+            } else {
+                tableDiv.style.display = window.innerWidth > 600 ? 'block' : 'none';
+                swipeDiv.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
+                calDiv.style.display = 'none';
+                toggleCalendarBtn.innerHTML = '<i class="fas fa-calendar-alt"></i> View';
+            }
+        });
+
+        function renderCalendar(allRecords) {
+            const calDiv = document.getElementById('calendarView');
+            if (calDiv.style.display === 'none') return;
+            
+            const now = new Date();
+            // Use month filter if active, else current month
+            const [y, m] = monthFilter.value ? monthFilter.value.split('-') : [now.getFullYear(), now.getMonth() + 1];
+            const year = parseInt(y);
+            const month = parseInt(m) - 1; // JS months are 0-11
+            
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
+            
+            let html = `<div style="text-align:center; font-weight:bold; margin-bottom:10px;">${new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })}</div>`;
+            html += `<div class="calendar-grid">`;
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => html += `<div class="calendar-day-header">${d}</div>`);
+            
+            for(let i=0; i<firstDay; i++) html += `<div></div>`; // Empty slots
+            
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const rec = allRecords.find(r => r.date === dateStr);
+                const isToday = (dateStr === now.toISOString().split('T')[0]);
+                
+                html += `<div class="calendar-day ${rec ? 'has-record' : ''} ${isToday ? 'today' : ''}">
+                    <span class="day-number">${d}</span>
+                    ${rec ? `<span class="day-hours">${rec.timeOut ? ((new Date(`1970-01-01T${rec.timeOut}:00`) - new Date(`1970-01-01T${rec.timeIn}:00`))/3600000 - (parseFloat(rec.breakDuration)||0)).toFixed(1) + 'h' : 'Active'}</span>` : ''}
+                </div>`;
+            }
+            html += `</div>`;
+            calDiv.innerHTML = html;
+        }
 
         clockInNow.addEventListener('click', () => {
             const now = new Date();
