@@ -111,6 +111,15 @@
         .section-header:hover { background-color: rgba(0,0,0,0.03); }
         .section-header i { color: var(--primary-color); }
 
+        /* Notebook View Styles */
+        .notebook-table { width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; background: #fff; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); }
+        .notebook-table thead { display: none; }
+        .notebook-table tr { border-bottom: 1px solid #a4c3e3; transition: background 0.2s; }
+        .notebook-table tr:hover { background-color: #fdfdfd; }
+        .notebook-table td { padding: 15px; border: none; color: #333; }
+        .notebook-table td:first-child { border-left: 4px solid #ff7a7a; font-weight: bold; color: var(--primary-color); }
+        .notebook-table .delete-btn { background: transparent; color: #dc3545; padding: 0; text-decoration: underline; }
+
         /* Mobile Responsive Styles */
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
@@ -227,6 +236,10 @@
 
                 <div class="section-header" onclick="toggleSection('recordListContainer')"><i class="fas fa-list"></i> Record List <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.9rem; color: var(--text-muted);"></i></div>
                 <div id="recordListContainer" style="display: none;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;">
+                        <input type="month" id="monthFilter" style="width: auto; flex-grow: 1;">
+                        <button id="toggleViewBtn" style="background-color: #6c757d; font-size: 0.9rem; padding: 0.6rem;"><i class="fas fa-book"></i> Notebook View</button>
+                    </div>
                     <table id="dtrTable">
                         <thead>
                             <tr>
@@ -336,6 +349,8 @@
         const themePicker = document.getElementById('themePicker');
         const darkModeToggle = document.getElementById('darkModeToggle');
         const clearAllBtn = document.getElementById('clearAllBtn');
+        const monthFilter = document.getElementById('monthFilter');
+        const toggleViewBtn = document.getElementById('toggleViewBtn');
 
         // Load saved settings
         const savedAvatar = localStorage.getItem('dtr_avatar');
@@ -594,7 +609,11 @@
             tableBody.innerHTML = '';
             records.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
             
-            const filteredRecords = records.filter(r => r.date.includes(filterText));
+            let filteredRecords = records.filter(r => r.date.includes(filterText));
+            
+            if (monthFilter.value) {
+                filteredRecords = filteredRecords.filter(r => r.date.startsWith(monthFilter.value));
+            }
             
             let totalHours = 0;
 
@@ -625,6 +644,8 @@
             document.getElementById('totalHoursDisplay').textContent = totalHours.toFixed(2);
             document.getElementById('totalDaysDisplay').textContent = filteredRecords.length;
         }
+
+        monthFilter.addEventListener('change', () => renderTable(searchInput.value));
 
         async function addRecord() {
             if (!dateInput.value || !timeInInput.value || !timeOutInput.value) {
@@ -703,6 +724,11 @@
                 renderTable();
                 alert('All records cleared.');
             }
+        });
+
+        toggleViewBtn.addEventListener('click', () => {
+            const table = document.getElementById('dtrTable');
+            table.classList.toggle('notebook-table');
         });
 
         addBtn.addEventListener('click', addRecord);
