@@ -14,6 +14,7 @@
             --text-muted: #666;
             --border-color: #eee;
             --th-bg: #f8f9fa;
+            --input-bg: #f0f2f5;
         }
         body.dark-mode {
             --bg-color: #121212;
@@ -22,21 +23,22 @@
             --text-muted: #aaa;
             --border-color: #333;
             --th-bg: #2d2d2d;
+            --input-bg: #2a2a2a;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; }
         h1, h2 { text-align: center; color: var(--text-color); }
         
-        .container { background: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background 0.3s; }
+        .container { background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: none; border: 1px solid var(--border-color); transition: background 0.3s; }
         
         /* Layout for Sidebar */
         .app-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
-        .sidebar { width: 200px; background: var(--card-bg); padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .main-content { flex: 1; background: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 400px; }
+        .sidebar { width: 220px; background: var(--card-bg); padding: 1.5rem; border-radius: 16px; display: flex; flex-direction: column; gap: 0.8rem; border: 1px solid var(--border-color); }
+        .main-content { flex: 1; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); min-height: 500px; }
         
-        .nav-btn { text-align: left; background: transparent; color: var(--text-color); padding: 0.8rem; border-radius: 4px; }
-        .nav-btn:hover { background-color: rgba(0,0,0,0.05); filter: none; }
-        .nav-btn.active { background-color: var(--primary-color); color: white; }
+        .nav-btn { text-align: left; background: transparent; color: var(--text-muted); padding: 0.8rem 1rem; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
+        .nav-btn:hover { background-color: var(--bg-color); color: var(--primary-color); filter: none; }
+        .nav-btn.active { background-color: var(--primary-color); color: white; box-shadow: 0 4px 12px rgba(0,123,255,0.2); }
         .nav-btn i { width: 20px; text-align: center; margin-right: 10px; }
 
         .section { display: none; }
@@ -47,10 +49,12 @@
         .input-wrapper { display: flex; flex-direction: column; }
         
         label { font-size: 0.9rem; margin-bottom: 0.3rem; color: var(--text-muted); }
-        input, select { padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; background: var(--card-bg); color: var(--text-color); }
+        input, select { padding: 0.8rem; border: 1px solid transparent; background-color: var(--input-bg); border-radius: 8px; font-size: 0.95rem; color: var(--text-color); transition: border 0.2s; }
+        input:focus, select:focus { outline: none; border-color: var(--primary-color); background-color: var(--card-bg); }
         
-        button { padding: 0.6rem 1.2rem; cursor: pointer; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1rem; transition: filter 0.2s; }
+        button { padding: 0.8rem 1.5rem; cursor: pointer; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; transition: transform 0.1s, filter 0.2s; }
         button:hover { filter: brightness(85%); }
+        button:active { transform: scale(0.98); }
         button i { margin-right: 0.5rem; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
@@ -63,6 +67,13 @@
         .total-row { font-weight: bold; background-color: var(--border-color); }
 
         .avatar { width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 1rem; display: block; border: 3px solid var(--primary-color); padding: 3px; background: #fff; cursor: pointer; object-fit: cover; }
+        
+        /* Top Bar & Search */
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .search-container { position: relative; width: 300px; }
+        .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-container input { width: 100%; padding-left: 40px; border-radius: 20px; }
+        .mini-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid var(--primary-color); }
         
         /* Toggle Switch */
         .switch-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 1rem; }
@@ -101,6 +112,7 @@
         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Avatar" class="avatar" id="userAvatar" title="Click to upload image">
         <h2>My-DTR</h2>
         <div style="margin-bottom: 1rem;">
+            <input type="text" id="username" placeholder="Username or Email" style="width: 80%; text-align: center; margin-bottom: 0.5rem;">
             <input type="password" id="passcode" placeholder="Enter Passcode" style="width: 80%; text-align: center;">
         </div>
         <button id="loginBtn" style="width: 80%;"><i class="fas fa-key"></i> Access System</button>
@@ -122,10 +134,16 @@
         
         <!-- Content Area -->
         <div class="main-content">
+            <div class="top-header">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search records...">
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="mini-avatar" id="topAvatar" title="Go to Profile">
+            </div>
             
             <!-- Home Section -->
             <div id="homeSection" class="section active">
-                <h2>Daily Time Record</h2>
                 <div class="form-group">
                     <div class="input-wrapper">
                         <label for="date">Date</label>
@@ -199,6 +217,8 @@
         const loginError = document.getElementById('loginError');
         const userAvatar = document.getElementById('userAvatar');
         const profileAvatar = document.getElementById('profileAvatar');
+        const topAvatar = document.getElementById('topAvatar');
+        const usernameInput = document.getElementById('username');
         const avatarUpload = document.getElementById('avatarUpload');
         const themePicker = document.getElementById('themePicker');
         const darkModeToggle = document.getElementById('darkModeToggle');
@@ -208,6 +228,7 @@
         if (savedAvatar) {
             userAvatar.src = savedAvatar;
             profileAvatar.src = savedAvatar;
+            topAvatar.src = savedAvatar;
         }
 
         const savedTheme = localStorage.getItem('dtr_theme');
@@ -230,6 +251,7 @@
 
         function attemptLogin() {
             if (passInput.value === CORRECT_PASSCODE) {
+                if(usernameInput.value) localStorage.setItem('dtr_username', usernameInput.value);
                 localStorage.setItem('dtr_logged_in', 'true');
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
@@ -300,6 +322,7 @@
         const triggerUpload = () => avatarUpload.click();
         userAvatar.addEventListener('click', triggerUpload);
         profileAvatar.addEventListener('click', triggerUpload);
+        topAvatar.addEventListener('click', () => showSection('profile'));
 
         avatarUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -308,6 +331,7 @@
                 reader.onload = (e) => {
                     userAvatar.src = e.target.result;
                     profileAvatar.src = e.target.result;
+                    topAvatar.src = e.target.result;
                     localStorage.setItem('dtr_avatar', e.target.result);
                 };
                 reader.readAsDataURL(file);
@@ -344,6 +368,7 @@
         const timeOutInput = document.getElementById('timeOut');
         const addBtn = document.getElementById('addBtn');
         const tableBody = document.querySelector('#dtrTable tbody');
+        const searchInput = document.getElementById('searchInput');
 
         // Initialize date input to today
         dateInput.valueAsDate = new Date();
@@ -351,11 +376,13 @@
         // Load records from local storage
         let records = JSON.parse(localStorage.getItem('dtr_records')) || [];
 
-        function renderTable() {
+        function renderTable(filterText = '') {
             tableBody.innerHTML = '';
             records.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
             
-            records.forEach((record, index) => {
+            const filteredRecords = records.filter(r => r.date.includes(filterText));
+
+            filteredRecords.forEach((record, index) => {
                 const row = document.createElement('tr');
                 
                 // Calculate duration
@@ -414,6 +441,7 @@
         }
 
         addBtn.addEventListener('click', addRecord);
+        searchInput.addEventListener('input', (e) => renderTable(e.target.value));
         
         // Initial render
         renderTable();
