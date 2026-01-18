@@ -575,7 +575,7 @@
         dateInput.valueAsDate = new Date();
 
         // Load records from local storage
-        // let records = JSON.parse(localStorage.getItem('dtr_records')) || []; // Replaced by Firebase
+        let records = JSON.parse(localStorage.getItem('dtr_records')) || []; // Fallback to LocalStorage
 
         function renderTable(filterText = '') {
             tableBody.innerHTML = '';
@@ -596,12 +596,15 @@
                 
                 totalHours += diff;
 
+                // Ensure record has an ID for deletion (fallback for local data)
+                const recId = record.id || `local_${index}`;
+
                 row.innerHTML = `
                     <td data-label="Date">${record.date}</td>
                     <td data-label="Time In">${record.timeIn}</td>
                     <td data-label="Time Out">${record.timeOut}</td>
                     <td data-label="Hours">${diff.toFixed(2)}</td>
-                    <td data-label="Action"><button class="delete-btn" onclick="deleteRecord('${record.id}')"><i class="fas fa-trash-alt"></i> Delete</button></td>
+                    <td data-label="Action"><button class="delete-btn" onclick="deleteRecord('${recId}')"><i class="fas fa-trash-alt"></i> Delete</button></td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -628,7 +631,16 @@
                     });
                 } catch (e) { alert("Error saving: " + e.message); }
             } else {
-                alert("Database not connected or user not found.");
+                // Fallback: Save to LocalStorage if Firebase is not configured
+                records.push({
+                    id: `local_${Date.now()}`,
+                    date: dateInput.value,
+                    timeIn: timeInInput.value,
+                    timeOut: timeOutInput.value,
+                    username: username
+                });
+                localStorage.setItem('dtr_records', JSON.stringify(records));
+                renderTable(searchInput.value);
             }
         }
 
@@ -645,8 +657,13 @@
 
         window.deleteRecord = async function(id) {
             if(confirm('Are you sure you want to delete this record?')) {
-                if (db && id) {
+                if (db && id && !id.startsWith('local_')) {
                     await deleteDoc(doc(db, "dtr_records", id));
+                } else {
+                    // Delete from LocalStorage
+                    records = records.filter((r, index) => (r.id || `local_${index}`) !== id);
+                    localStorage.setItem('dtr_records', JSON.stringify(records));
+                    renderTable(searchInput.value);
                 }
             }
         }
