@@ -6,37 +6,80 @@
     <title>My-DTR</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary-color: #007bff; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background-color: #f9f9f9; }
-        h1 { text-align: center; color: #333; }
+        :root { 
+            --primary-color: #007bff; 
+            --bg-color: #f9f9f9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --text-muted: #666;
+            --border-color: #eee;
+            --th-bg: #f8f9fa;
+        }
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #aaa;
+            --border-color: #333;
+            --th-bg: #2d2d2d;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; }
+        h1, h2 { text-align: center; color: var(--text-color); }
         
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { background: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background 0.3s; }
         
-        .form-group { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        /* Layout for Sidebar */
+        .app-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
+        .sidebar { width: 200px; background: var(--card-bg); padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .main-content { flex: 1; background: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 400px; }
+        
+        .nav-btn { text-align: left; background: transparent; color: var(--text-color); padding: 0.8rem; border-radius: 4px; }
+        .nav-btn:hover { background-color: rgba(0,0,0,0.05); filter: none; }
+        .nav-btn.active { background-color: var(--primary-color); color: white; }
+        .nav-btn i { width: 20px; text-align: center; margin-right: 10px; }
+
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .form-group { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
         .input-wrapper { display: flex; flex-direction: column; }
         
-        label { font-size: 0.9rem; margin-bottom: 0.3rem; color: #666; }
-        input { padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        label { font-size: 0.9rem; margin-bottom: 0.3rem; color: var(--text-muted); }
+        input, select { padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; background: var(--card-bg); color: var(--text-color); }
         
         button { padding: 0.6rem 1.2rem; cursor: pointer; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; font-size: 1rem; transition: filter 0.2s; }
         button:hover { filter: brightness(85%); }
         button i { margin-right: 0.5rem; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; }
-        th { background-color: #f8f9fa; font-weight: 600; color: #444; }
+        th, td { border-bottom: 1px solid var(--border-color); padding: 12px; text-align: left; color: var(--text-color); }
+        th { background-color: var(--th-bg); font-weight: 600; color: var(--text-color); }
         
         .delete-btn { background-color: #dc3545; padding: 0.4rem 0.8rem; font-size: 0.9rem; }
         .delete-btn:hover { background-color: #a71d2a; }
         
-        .total-row { font-weight: bold; background-color: #e9ecef; }
+        .total-row { font-weight: bold; background-color: var(--border-color); }
 
         .avatar { width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 1rem; display: block; border: 3px solid var(--primary-color); padding: 3px; background: #fff; cursor: pointer; object-fit: cover; }
+        
+        /* Toggle Switch */
+        .switch-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 1rem; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
 
         /* Mobile Responsive Styles */
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
-            .container { padding: 1rem; }
+            .app-layout { flex-direction: column; }
+            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 0.5rem; box-sizing: border-box; }
+            .nav-btn { padding: 0.5rem; font-size: 0.9rem; white-space: nowrap; }
+            .main-content { width: 100%; padding: 1rem; box-sizing: border-box; }
             
             .form-group { flex-direction: column; gap: 0.8rem; align-items: stretch; }
             .input-wrapper { width: 100%; }
@@ -44,14 +87,15 @@
 
             /* Responsive Table (Card View) */
             thead { display: none; }
-            tr { display: block; border: 1px solid #ddd; margin-bottom: 1rem; border-radius: 4px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-            td { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; text-align: right; padding: 10px; }
+            tr { display: block; border: 1px solid var(--border-color); margin-bottom: 1rem; border-radius: 4px; background: var(--card-bg); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+            td { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); text-align: right; padding: 10px; }
             td:last-child { border-bottom: none; }
-            td::before { content: attr(data-label); font-weight: 600; color: #555; margin-right: 1rem; }
+            td::before { content: attr(data-label); font-weight: 600; color: var(--text-muted); margin-right: 1rem; }
         }
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
     <div class="container" id="loginContainer" style="max-width: 400px; text-align: center; margin-top: 5rem;">
         <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
         <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Avatar" class="avatar" id="userAvatar" title="Click to upload image">
@@ -64,43 +108,84 @@
         <p id="loginError" style="color: #dc3545; display: none; margin-top: 10px;">Incorrect Passcode</p>
     </div>
 
-    <div class="container" id="mainContainer" style="display: none;">
-        <div style="position: relative; margin-bottom: 1.5rem;">
-            <h1 style="margin: 0;">My-DTR</h1>
-            <input type="color" id="themePicker" value="#007bff" style="position: absolute; top: 0; right: 100px; height: 30px; width: 40px; border: none; background: none; cursor: pointer;" title="Change Theme Color">
-            <button id="logoutBtn" style="position: absolute; top: 0; right: 0; background-color: #6c757d; padding: 0.4rem 0.8rem; font-size: 0.9rem;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    <!-- Main App Layout -->
+    <div class="app-layout" id="mainContainer" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3 style="text-align: center; margin: 0.5rem 0 1rem; color: var(--primary-color);">My-DTR</h3>
+            <button class="nav-btn active" onclick="showSection('home')"><i class="fas fa-home"></i> Home</button>
+            <button class="nav-btn" onclick="showSection('profile')"><i class="fas fa-user"></i> Profile</button>
+            <button class="nav-btn" onclick="showSection('settings')"><i class="fas fa-cog"></i> Settings</button>
+            <div style="flex-grow: 1;"></div>
+            <button id="logoutBtn" class="nav-btn" style="color: #dc3545;"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
         
-        <div class="form-group">
-            <div class="input-wrapper">
-                <label for="date">Date</label>
-                <input type="date" id="date">
-            </div>
-            <div class="input-wrapper">
-                <label for="timeIn">Time In</label>
-                <input type="time" id="timeIn">
-            </div>
-            <div class="input-wrapper">
-                <label for="timeOut">Time Out</label>
-                <input type="time" id="timeOut">
-            </div>
-            <button id="addBtn"><i class="fas fa-plus-circle"></i> Add Entry</button>
-        </div>
+        <!-- Content Area -->
+        <div class="main-content">
+            
+            <!-- Home Section -->
+            <div id="homeSection" class="section active">
+                <h2>Daily Time Record</h2>
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <label for="date">Date</label>
+                        <input type="date" id="date">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="timeIn">Time In</label>
+                        <input type="time" id="timeIn">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="timeOut">Time Out</label>
+                        <input type="time" id="timeOut">
+                    </div>
+                    <button id="addBtn"><i class="fas fa-plus-circle"></i> Add Entry</button>
+                </div>
 
-        <table id="dtrTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Time In</th>
-                    <th>Time Out</th>
-                    <th>Hours</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be added here via JS -->
-            </tbody>
-        </table>
+                <table id="dtrTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Hours</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be added here via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profileSection" class="section">
+                <h2>My Profile</h2>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Avatar" class="avatar" id="profileAvatar" title="Click to change">
+                    <p style="color: var(--text-muted);">Click image to update avatar</p>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settingsSection" class="section">
+                <h2>Settings</h2>
+                <div style="max-width: 400px; margin: 0 auto;">
+                    <div class="form-group" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                        <label>Theme Color</label>
+                        <input type="color" id="themePicker" value="#007bff" style="width: 100%; height: 40px; cursor: pointer;">
+                    </div>
+                    
+                    <div class="switch-wrapper">
+                        <label class="switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-weight: 500;">Dark Mode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -113,12 +198,17 @@
         const passInput = document.getElementById('passcode');
         const loginError = document.getElementById('loginError');
         const userAvatar = document.getElementById('userAvatar');
+        const profileAvatar = document.getElementById('profileAvatar');
         const avatarUpload = document.getElementById('avatarUpload');
         const themePicker = document.getElementById('themePicker');
+        const darkModeToggle = document.getElementById('darkModeToggle');
 
         // Load saved settings
         const savedAvatar = localStorage.getItem('dtr_avatar');
-        if (savedAvatar) userAvatar.src = savedAvatar;
+        if (savedAvatar) {
+            userAvatar.src = savedAvatar;
+            profileAvatar.src = savedAvatar;
+        }
 
         const savedTheme = localStorage.getItem('dtr_theme');
         if (savedTheme) {
@@ -126,17 +216,23 @@
             themePicker.value = savedTheme;
         }
 
+        // Load Dark Mode
+        if (localStorage.getItem('dtr_dark_mode') === 'true') {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.checked = true;
+        }
+
         // Check login status on load
         if (localStorage.getItem('dtr_logged_in') === 'true') {
             loginContainer.style.display = 'none';
-            mainContainer.style.display = 'block';
+            mainContainer.style.display = 'flex';
         }
 
         function attemptLogin() {
             if (passInput.value === CORRECT_PASSCODE) {
                 localStorage.setItem('dtr_logged_in', 'true');
                 loginContainer.style.display = 'none';
-                mainContainer.style.display = 'block';
+                mainContainer.style.display = 'flex';
             } else {
                 loginError.style.display = 'block';
             }
@@ -184,7 +280,7 @@
                 // Success
                 localStorage.setItem('dtr_logged_in', 'true');
                 loginContainer.style.display = 'none';
-                mainContainer.style.display = 'block';
+                mainContainer.style.display = 'flex';
             } catch (err) {
                 console.error(err);
                 // Specific error for file:// protocol
@@ -201,13 +297,17 @@
         passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') attemptLogin(); });
 
         // Avatar Upload Logic
-        userAvatar.addEventListener('click', () => avatarUpload.click());
+        const triggerUpload = () => avatarUpload.click();
+        userAvatar.addEventListener('click', triggerUpload);
+        profileAvatar.addEventListener('click', triggerUpload);
+
         avatarUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     userAvatar.src = e.target.result;
+                    profileAvatar.src = e.target.result;
                     localStorage.setItem('dtr_avatar', e.target.result);
                 };
                 reader.readAsDataURL(file);
@@ -219,6 +319,17 @@
             const color = e.target.value;
             document.documentElement.style.setProperty('--primary-color', color);
             localStorage.setItem('dtr_theme', color);
+        });
+
+        // Dark Mode Logic
+        darkModeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('dtr_dark_mode', 'true');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('dtr_dark_mode', 'false');
+            }
         });
         
         document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -277,6 +388,17 @@
             });
             
             saveAndRender();
+        }
+
+        // Navigation Logic
+        window.showSection = function(sectionId) {
+            // Update buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Update sections
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(sectionId + 'Section').classList.add('active');
         }
 
         window.deleteRecord = function(index) {
