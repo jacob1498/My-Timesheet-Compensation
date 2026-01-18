@@ -27,6 +27,23 @@
         .delete-btn:hover { background-color: #a71d2a; }
         
         .total-row { font-weight: bold; background-color: #e9ecef; }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 600px) {
+            body { margin: 1rem auto; padding: 0 0.5rem; }
+            .container { padding: 1rem; }
+            
+            .form-group { flex-direction: column; gap: 0.8rem; align-items: stretch; }
+            .input-wrapper { width: 100%; }
+            button#addBtn { width: 100%; margin-top: 0.5rem; }
+
+            /* Responsive Table (Card View) */
+            thead { display: none; }
+            tr { display: block; border: 1px solid #ddd; margin-bottom: 1rem; border-radius: 4px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+            td { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; text-align: right; padding: 10px; }
+            td:last-child { border-bottom: none; }
+            td::before { content: attr(data-label); font-weight: 600; color: #555; margin-right: 1rem; }
+        }
     </style>
 </head>
 <body>
@@ -36,6 +53,7 @@
             <input type="password" id="passcode" placeholder="Enter Passcode" style="width: 80%; text-align: center;">
         </div>
         <button id="loginBtn" style="width: 80%;">Access System</button>
+        <button id="bioBtn" style="width: 80%; margin-top: 0.5rem; background-color: #28a745;">Login with Fingerprint</button>
         <p id="loginError" style="color: #dc3545; display: none; margin-top: 10px;">Incorrect Passcode</p>
     </div>
 
@@ -80,6 +98,7 @@
         const loginContainer = document.getElementById('loginContainer');
         const mainContainer = document.getElementById('mainContainer');
         const loginBtn = document.getElementById('loginBtn');
+        const bioBtn = document.getElementById('bioBtn');
         const passInput = document.getElementById('passcode');
         const loginError = document.getElementById('loginError');
 
@@ -92,7 +111,61 @@
             }
         }
 
+        // --- Biometric Logic ---
+        async function attemptBiometric() {
+            if (!window.PublicKeyCredential) {
+                alert("Biometrics not supported on this browser.");
+                return;
+            }
+
+            // Helpers for Base64URL encoding/decoding
+            const bufferDecode = (val) => Uint8Array.from(atob(val.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+            const bufferEncode = (val) => btoa(String.fromCharCode.apply(null, new Uint8Array(val))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+            const savedId = localStorage.getItem('dtr_bio_id');
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+
+            try {
+                if (savedId) {
+                    // Authenticate existing user
+                    await navigator.credentials.get({
+                        publicKey: {
+                            challenge: challenge,
+                            allowCredentials: [{ id: bufferDecode(savedId), type: 'public-key' }],
+                            userVerification: 'required'
+                        }
+                    });
+                } else {
+                    // Register new user (First time)
+                    const cred = await navigator.credentials.create({
+                        publicKey: {
+                            challenge: challenge,
+                            rp: { name: "DTR App" },
+                            user: { id: new Uint8Array(16), name: "user", displayName: "User" },
+                            pubKeyCredParams: [{alg: -7, type: "public-key"}],
+                            authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                            timeout: 60000
+                        }
+                    });
+                    localStorage.setItem('dtr_bio_id', bufferEncode(cred.rawId));
+                }
+                // Success
+                loginContainer.style.display = 'none';
+                mainContainer.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                // Specific error for file:// protocol
+                if (window.location.protocol === 'file:') {
+                    alert("Security Error: Fingerprint login does not work on local files (file://). Please host this file or use a local server (localhost).");
+                } else {
+                    alert("Biometric authentication failed or cancelled.");
+                }
+            }
+        }
+
         loginBtn.addEventListener('click', attemptLogin);
+        bioBtn.addEventListener('click', attemptBiometric);
         passInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') attemptLogin(); });
 
         const dateInput = document.getElementById('date');
@@ -121,11 +194,11 @@
                 if (diff < 0) diff += 24; // Handle overnight shifts
 
                 row.innerHTML = `
-                    <td>${record.date}</td>
-                    <td>${record.timeIn}</td>
-                    <td>${record.timeOut}</td>
-                    <td>${diff.toFixed(2)}</td>
-                    <td><button class="delete-btn" onclick="deleteRecord(${index})">Delete</button></td>
+                    <td data-label="Date">${record.date}</td>
+                    <td data-label="Time In">${record.timeIn}</td>
+                    <td data-label="Time Out">${record.timeOut}</td>
+                    <td data-label="Hours">${diff.toFixed(2)}</td>
+                    <td data-label="Action"><button class="delete-btn" onclick="deleteRecord(${index})">Delete</button></td>
                 `;
                 tableBody.appendChild(row);
             });
