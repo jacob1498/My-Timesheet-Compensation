@@ -121,6 +121,44 @@
         .section-header i { color: var(--primary-color); }
 
         /* Mobile Swipe View */
+        .footer-nav {
+            display: none; /* Hidden by default, shown by JS on home screen */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+            padding: 8px 0;
+            justify-content: space-around;
+        }
+
+        .footer-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            padding: 0;
+            flex: 1;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .footer-nav-btn i {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .footer-nav-btn.active {
+            color: var(--primary-color);
+        }
+
         .mobile-swipe-view { display: none; }
         .day-card { background: var(--card-bg); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 0.8rem; position: relative; }
         .day-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 0.5rem; }
@@ -176,6 +214,11 @@
         }
 
         /* Mobile Responsive Styles */
+        @media (min-width: 601px) {
+            .footer-nav {
+                display: none !important; /* Always hide on desktop */
+            }
+        }
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
             .app-layout { flex-direction: column; }
@@ -183,7 +226,7 @@
             .nav-btn { width: auto; flex-direction: column; gap: 4px; padding: 0.5rem; font-size: 0.8rem; }
             .nav-btn i { font-size: 1.2rem; }
             .nav-btn span { display: block; font-size: 0.7rem; } /* Show text on mobile */
-            .main-content { width: 100%; padding: 1rem; box-sizing: border-box; }
+            .main-content { width: 100%; padding: 1rem; box-sizing: border-box; padding-bottom: 70px; /* Space for footer nav */ }
             
             .welcome-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
             /* Swipe Feature Logic */
@@ -431,6 +474,13 @@
                 </div>
             </div>
         </div>
+
+        <!-- Home Footer Navigation -->
+        <div class="footer-nav" id="homeFooterNav">
+            <button class="footer-nav-btn active" id="footerDashboardBtn"><i class="fas fa-th-large"></i> <span>Dashboard</span></button>
+            <button class="footer-nav-btn" id="footerListBtn"><i class="fas fa-list"></i> <span>List</span></button>
+            <button class="footer-nav-btn" id="footerLogoutBtn" style="color: #dc3545;"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
+        </div>
     </div>
 
     <script>
@@ -510,6 +560,11 @@
         const profileJob = document.getElementById('profileJob');
         const profileBio = document.getElementById('profileBio');
         const saveProfileBtn = document.getElementById('saveProfileBtn');
+        const homeFooterNav = document.getElementById('homeFooterNav');
+        const footerDashboardBtn = document.getElementById('footerDashboardBtn');
+        const footerListBtn = document.getElementById('footerListBtn');
+        const footerLogoutBtn = document.getElementById('footerLogoutBtn');
+
 
         // Load saved settings
         const savedAvatar = localStorage.getItem('dtr_avatar');
@@ -581,6 +636,10 @@
                 if (localStorage.getItem('dtr_logged_in') === 'true' || sessionStorage.getItem('dtr_logged_in') === 'true') {
                     loginContainer.style.display = 'none';
                     mainContainer.style.display = 'flex';
+                    // Show footer nav if on home screen (default)
+                    if (document.getElementById('homeSection').classList.contains('active')) {
+                        homeFooterNav.style.display = 'flex';
+                    }
                     checkDailyEntryReminder(); // Check for 24h inactivity
                     setupRealtimeListener(storedUser); // Start Sync
                 } else {
@@ -637,6 +696,10 @@
                 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
+                // Show footer nav if on home screen (default)
+                if (document.getElementById('homeSection').classList.contains('active')) {
+                    homeFooterNav.style.display = 'flex';
+                }
                 checkDailyEntryReminder();
                 setupRealtimeListener(loginUsername.value); // Start Sync
             } else {
@@ -704,6 +767,10 @@
 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
+                // Show footer nav if on home screen (default)
+                if (document.getElementById('homeSection').classList.contains('active')) {
+                    homeFooterNav.style.display = 'flex';
+                }
                 setupRealtimeListener(localStorage.getItem('dtr_username')); // Start Sync
             } catch (err) {
                 console.error(err);
@@ -762,6 +829,7 @@
             localStorage.removeItem('dtr_logged_in');
             sessionStorage.removeItem('dtr_logged_in');
             if (unsubscribe) unsubscribe(); // Stop Sync
+            homeFooterNav.style.display = 'none';
             mainContainer.style.display = 'none';
             checkAuthStatus(); // Re-evaluate to show login
             passInput.value = '';
@@ -1201,6 +1269,29 @@
             alert('Profile saved!');
         });
 
+        footerDashboardBtn.addEventListener('click', () => {
+            document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
+            homeFooterNav.querySelectorAll('.footer-nav-btn').forEach(b => b.classList.remove('active'));
+            footerDashboardBtn.classList.add('active');
+        });
+
+        footerListBtn.addEventListener('click', () => {
+            const recordListContainer = document.getElementById('recordListContainer');
+            if (recordListContainer.style.display === 'none' || !recordListContainer.style.display) {
+                toggleSection('recordListContainer');
+            }
+            // A small delay to allow the container to be displayed before scrolling
+            setTimeout(() => {
+                recordListContainer.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+            homeFooterNav.querySelectorAll('.footer-nav-btn').forEach(b => b.classList.remove('active'));
+            footerListBtn.classList.add('active');
+        });
+
+        footerLogoutBtn.addEventListener('click', () => {
+            document.getElementById('logoutBtn').click(); // Reuse existing logout logic
+        });
+
         clockInNow.addEventListener('click', () => {
             const now = new Date();
             dateInput.valueAsDate = now;
@@ -1300,11 +1391,21 @@
         window.showSection = function(sectionId) {
             // Update buttons
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            const targetBtn = document.querySelector(`.nav-btn[onclick="showSection('${sectionId}')"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
             
             // Update sections
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(sectionId + 'Section').classList.add('active');
+
+            // Show/hide footer nav based on section
+            if (sectionId === 'home') {
+                homeFooterNav.style.display = 'flex';
+            } else {
+                homeFooterNav.style.display = 'none';
+            }
         }
 
         window.toggleSection = function(id) {
