@@ -261,7 +261,8 @@
             #mobileSearchBtn { display: flex; } /* Show search icon */
             
             .main-content { width: 100%; padding: 1rem; box-sizing: border-box; padding-bottom: 70px; /* Space for footer nav */ }
-            .top-header { display: none; } /* Hide top header on mobile */
+            .top-header { display: flex; justify-content: flex-end; padding: 0; border: none; margin-bottom: 1rem; }
+            .top-header .greeting, .top-header .search-container { display: none; }
             .welcome-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
             /* Swipe Feature Logic */
             .table-responsive { display: none; } /* Hide table on mobile */
@@ -484,7 +485,11 @@
                     <p style="color: var(--text-muted);">Click image to update avatar</p>
                     
                     <div class="form-group" style="flex-direction: column; align-items: center; margin-top: 2rem; border-bottom: none;">
-                        <input type="text" id="profileName" placeholder="Full Name" style="text-align: center; font-weight: bold; font-size: 1.2rem; margin-bottom: 0.5rem; background: transparent; border: none; border-bottom: 2px solid var(--border-color); border-radius: 0;">
+                        <input type="text" id="profileName" placeholder="Full Name" style="text-align: center; font-weight: bold; font-size: 1.2rem; margin-bottom: 1rem; background: transparent; border: none; border-bottom: 2px solid var(--border-color); border-radius: 0; width: 80%;">
+                        <div class="input-wrapper" style="width: 80%; margin-bottom: 1rem;">
+                            <label for="profileUsername" style="text-align: center; width: 100%;">Username (for login)</label>
+                            <input type="text" id="profileUsername" placeholder="Username" style="text-align: center; font-weight: 500; font-size: 1rem; background: transparent; border: none; border-bottom: 1px solid var(--border-color); border-radius: 0; padding-bottom: 0.5rem;">
+                        </div>
                         <input type="text" id="profileJob" placeholder="Job Title" style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; background: transparent; border: none; width: 80%;">
                         <textarea id="profileBio" placeholder="Write a short bio about yourself..." style="width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); resize: vertical; min-height: 100px; font-family: inherit;"></textarea>
                         <button id="saveProfileBtn" style="margin-top: 1.5rem; width: 100%;">Save Profile Details</button>
@@ -614,6 +619,7 @@
         const footerListBtn = document.getElementById('footerListBtn');
         const footerLogoutBtn = document.getElementById('footerLogoutBtn');
         const fabBtn = document.getElementById('fabBtn');
+        const profileUsername = document.getElementById('profileUsername');
         const mobileSearchInput = document.getElementById('mobileSearchInput');
 
 
@@ -641,6 +647,7 @@
         if (savedProfile.name) profileName.value = savedProfile.name;
         if (savedProfile.job) profileJob.value = savedProfile.job;
         if (savedProfile.bio) profileBio.value = savedProfile.bio;
+        profileUsername.value = localStorage.getItem('dtr_username') || '';
         if (savedProfile.name) document.getElementById('topGreeting').textContent = `Hello, ${savedProfile.name.split(' ')[0]}`;
 
         // Load Dark Mode
@@ -1314,9 +1321,26 @@
 
         // Save Profile Logic
         saveProfileBtn.addEventListener('click', () => {
+            const newUsername = profileUsername.value.trim();
+            if (!newUsername) {
+                alert('Username cannot be empty.');
+                profileUsername.value = localStorage.getItem('dtr_username') || ''; // Revert
+                return;
+            }
+
+            // Save username and update UI
+            localStorage.setItem('dtr_username', newUsername);
+            updateBanner(); // This function reads username from localStorage
+            loginTitle.textContent = `Welcome, ${newUsername}`;
+            if (db) {
+                setupRealtimeListener(newUsername);
+            }
+
+            // Save other profile details
             const profileData = { name: profileName.value, job: profileJob.value, bio: profileBio.value };
             localStorage.setItem('dtr_profile_details', JSON.stringify(profileData));
             if (profileName.value) document.getElementById('topGreeting').textContent = `Hello, ${profileName.value.split(' ')[0]}`;
+            
             alert('Profile saved!');
         });
 
@@ -1444,13 +1468,17 @@
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(sectionId + 'Section').classList.add('active');
 
-            // Show/hide footer nav based on section
+            const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+
+            // Show/hide footer nav and other UI based on section
             if (sectionId === 'home' || sectionId === 'list') {
                 homeFooterNav.style.display = 'flex';
                 fabBtn.style.display = 'flex'; // Show FAB
+                if (mobileSearchBtn) mobileSearchBtn.style.display = 'flex';
             } else {
                 homeFooterNav.style.display = 'none';
                 fabBtn.style.display = 'none'; // Hide FAB
+                if (mobileSearchBtn) mobileSearchBtn.style.display = 'none';
             }
         }
 
