@@ -39,15 +39,15 @@
         .container { background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color); transition: background 0.3s; }
         
         /* Layout for Sidebar */
-        .app-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
-        .sidebar { width: 80px; background: var(--card-bg); padding: 1.5rem 0.5rem; border-radius: 16px; display: flex; flex-direction: column; gap: 0.8rem; border: 1px solid var(--border-color); align-items: center; transition: width 0.3s; }
-        .main-content { flex: 1; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); min-height: 500px; }
+        .app-layout { display: flex; flex-direction: column; gap: 1.5rem; }
+        .sidebar { width: 100%; background: var(--card-bg); padding: 1rem; border-radius: 16px; display: flex; flex-direction: row; gap: 1rem; border: 1px solid var(--border-color); justify-content: center; align-items: center; box-sizing: border-box; }
+        .main-content { width: 100%; background: var(--card-bg); padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color); min-height: 500px; box-sizing: border-box; }
         
-        .nav-btn { text-align: center; background: transparent; color: var(--text-muted); padding: 0.8rem; border-radius: 12px; font-weight: 500; transition: all 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; }
+        .nav-btn { text-align: center; background: transparent; color: var(--text-muted); padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 500; transition: all 0.2s; width: auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .nav-btn:hover { background-color: var(--bg-color); color: var(--primary-color); filter: none; transform: scale(1.05); }
         .nav-btn.active { background-color: var(--primary-color); color: white; box-shadow: 0 4px 12px rgba(0,123,255,0.2); }
         .nav-btn i { font-size: 1.3rem; margin: 0; }
-        .nav-btn span { display: none; } /* Hide text on desktop */
+        .nav-btn span { display: inline; } /* Show text on desktop */
 
         .section { display: none; }
         .section.active { display: block; animation: fadeIn 0.3s; }
@@ -316,7 +316,6 @@
         <div class="sidebar">
             <h3 style="text-align: center; margin: 0.5rem 0 1rem; color: var(--primary-color); font-size: 0.8rem;">DTR</h3>
             <button class="nav-btn active" onclick="showSection('home')" title="Home"><i class="fas fa-home"></i> <span>Home</span></button>
-            <button class="nav-btn" onclick="showSection('alarm')" title="Alarm"><i class="fas fa-bell"></i> <span>Alarm</span></button>
             <button class="nav-btn" onclick="showSection('profile')" title="Profile"><i class="fas fa-user"></i> <span>Profile</span></button>
             <button class="nav-btn" onclick="showSection('settings')" title="Settings"><i class="fas fa-cog"></i> <span>Settings</span></button>
             <button class="nav-btn" id="mobileSearchBtn" onclick="toggleMobileSearch()" title="Search"><i class="fas fa-search"></i> <span>Search</span></button>
@@ -396,6 +395,13 @@
 
                     <p id="alarmStatus" style="color: var(--text-muted);">Alarm is off</p>
                     <button id="stopAlarmBtn" style="display: none; background-color: #dc3545; width: 100%; margin-top: 1rem; font-size: 1.2rem; padding: 1rem;"><i class="fas fa-bell-slash"></i> Stop Alarm</button>
+                    
+                    <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Custom Alarm Sound</label>
+                        <input type="file" id="alarmSoundUpload" accept="audio/*" style="width: 100%; margin-bottom: 0.5rem;">
+                        <button id="previewSoundBtn" style="background-color: #17a2b8; font-size: 0.9rem; padding: 0.5rem 1rem; margin-right: 5px;"><i class="fas fa-play"></i> Preview</button>
+                        <button id="resetSoundBtn" style="background-color: #6c757d; font-size: 0.9rem; padding: 0.5rem 1rem;"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
                 </div>
             </div>
 
@@ -568,8 +574,8 @@
         <!-- Home Footer Navigation -->
         <div class="footer-nav" id="homeFooterNav">
             <button class="footer-nav-btn active" id="footerDashboardBtn"><i class="fas fa-th-large"></i> <span>Dashboard</span></button>
-            <button class="footer-nav-btn" id="footerAlarmBtn"><i class="fas fa-bell"></i> <span>Alarm</span></button>
             <button class="footer-nav-btn" id="footerListBtn"><i class="fas fa-list"></i> <span>List</span></button>
+            <button class="footer-nav-btn" id="footerAlarmBtn"><i class="fas fa-bell"></i> <span>Alarm</span></button>
             <button class="footer-nav-btn" id="footerLogoutBtn" style="color: #dc3545;"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
         </div>
 
@@ -666,6 +672,9 @@
         const newPasswordInput = document.getElementById('newPassword');
         const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
         const mobileSearchInput = document.getElementById('mobileSearchInput');
+        const alarmSoundUpload = document.getElementById('alarmSoundUpload');
+        const previewSoundBtn = document.getElementById('previewSoundBtn');
+        const resetSoundBtn = document.getElementById('resetSoundBtn');
 
 
         // Load saved settings
@@ -1664,8 +1673,17 @@
         let isAlarmRinging = false;
         // Simple beep sound using AudioContext to avoid external file dependencies
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let customAudio = null;
 
         function playAlarmSound() {
+            const savedSound = localStorage.getItem('dtr_custom_sound');
+            if (savedSound) {
+                if (!customAudio) customAudio = new Audio(savedSound);
+                customAudio.loop = true;
+                customAudio.play().catch(e => console.error("Audio play failed", e));
+                return;
+            }
+
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -1698,8 +1716,12 @@
                 alarmStatus.style.fontWeight = "bold";
                 
                 // Play sound loop
-                playAlarmSound();
-                const ringInterval = setInterval(playAlarmSound, 1500);
+                if (localStorage.getItem('dtr_custom_sound')) {
+                    playAlarmSound(); // Handles looping internally for Audio obj
+                } else {
+                    playAlarmSound();
+                    alarmInterval = setInterval(playAlarmSound, 1500);
+                }
                 
                 // Notification
                 if (Notification.permission === "granted") {
@@ -1707,7 +1729,8 @@
                 }
 
                 stopAlarmBtn.onclick = () => {
-                    clearInterval(ringInterval);
+                    if (alarmInterval) clearInterval(alarmInterval);
+                    if (customAudio) { customAudio.pause(); customAudio.currentTime = 0; }
                     isAlarmRinging = false;
                     stopAlarmBtn.style.display = 'none';
                     alarmStatus.textContent = "Alarm stopped. See you next shift!";
@@ -1740,6 +1763,43 @@
         alarmTimeInput.addEventListener('change', () => {
             localStorage.setItem('dtr_alarm_time', alarmTimeInput.value);
             if (alarmToggle.checked) checkAlarm();
+        });
+
+        alarmSoundUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2000000) { // 2MB limit
+                    alert("File is too large. Please choose a file under 2MB.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        localStorage.setItem('dtr_custom_sound', evt.target.result);
+                        customAudio = new Audio(evt.target.result);
+                        alert("Custom sound saved!");
+                    } catch (err) {
+                        alert("Storage full or error saving sound.");
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        previewSoundBtn.addEventListener('click', () => {
+            const saved = localStorage.getItem('dtr_custom_sound');
+            if (saved) {
+                const audio = new Audio(saved);
+                audio.play();
+            } else {
+                playAlarmSound(); // Play default beep
+            }
+        });
+
+        resetSoundBtn.addEventListener('click', () => {
+            localStorage.removeItem('dtr_custom_sound');
+            customAudio = null;
+            alert("Reset to default beep.");
         });
 
         setInterval(checkAlarm, 1000);
