@@ -395,6 +395,13 @@
                     </div>
                 </div>
 
+                <!-- Dashboard Chart -->
+                <div style="background: var(--card-bg); padding: 1rem; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 2rem; height: 300px; position: relative;">
+                    <h3 style="margin: 0 0 1rem; font-size: 1rem; color: var(--text-muted); text-align: center;">Work Type Distribution</h3>
+                    <div style="height: 240px; width: 100%;">
+                        <canvas id="dashboardPieChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <!-- Alarm Section -->
@@ -1045,6 +1052,7 @@
             let totalOT = 0;
             let totalVL = 0;
             let totalSL = 0;
+            let typeCounts = { Regular: 0, Vacation: 0, Sick: 0, Rest: 0 };
 
             filteredRecords.forEach((record, index) => {
                 const row = document.createElement('tr');
@@ -1055,6 +1063,9 @@
                 let displayOT = "---";
                 let rowClass = "";
                 let warningHtml = "";
+
+                const type = record.workType || 'Regular';
+                if (typeCounts[type] !== undefined) typeCounts[type]++;
 
                 if (record.workType === 'Vacation') totalVL++;
                 if (record.workType === 'Sick') totalSL++;
@@ -1177,6 +1188,7 @@
 
             renderCalendar(records); // Update calendar if visible
             renderChart(filteredRecords); // Update chart if visible
+            renderDashboardChart(typeCounts); // Update dashboard pie chart
         }
 
         monthFilter.addEventListener('change', () => renderTable(searchInput.value));
@@ -1294,6 +1306,43 @@
             yearFilter.style.display = 'none';
             
             renderTable(searchInput.value);
+        }
+
+        // Dashboard Pie Chart Logic
+        let dashboardChart = null;
+        function renderDashboardChart(counts) {
+            const ctx = document.getElementById('dashboardPieChart');
+            if (!ctx) return;
+            
+            // Only render if visible to avoid Chart.js dimension issues
+            if (!document.getElementById('homeSection').classList.contains('active')) return;
+
+            if (dashboardChart) {
+                dashboardChart.destroy();
+            }
+
+            dashboardChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Regular', 'Vacation', 'Sick', 'Rest'],
+                    datasets: [{
+                        data: [counts.Regular, counts.Vacation, counts.Sick, counts.Rest],
+                        backgroundColor: ['#007bff', '#28a745', '#dc3545', '#ffc107'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { boxWidth: 12, font: { size: 11 }, color: getComputedStyle(document.body).getPropertyValue('--text-color') }
+                        }
+                    },
+                    layout: { padding: 10 }
+                }
+            });
         }
 
         // Chart Logic
@@ -1598,6 +1647,10 @@
             // Update sections
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(sectionId + 'Section').classList.add('active');
+            
+            if (sectionId === 'home') {
+                renderTable(searchInput.value); // Refresh dashboard charts
+            }
 
             const mobileSearchBtn = document.getElementById('mobileSearchBtn');
             const mobileSearchBar = document.getElementById('mobileSearchBar');
