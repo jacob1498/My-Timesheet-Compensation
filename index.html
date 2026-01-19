@@ -712,10 +712,9 @@
                 if (localStorage.getItem('dtr_logged_in') === 'true' || sessionStorage.getItem('dtr_logged_in') === 'true') {
                     loginContainer.style.display = 'none';
                     mainContainer.style.display = 'flex';
-                    // Show footer nav if on home screen (default)
-                    if (document.getElementById('homeSection').classList.contains('active')) {
-                        homeFooterNav.style.display = 'flex';
-                    }
+                    // Restore last active section
+                    const lastSection = localStorage.getItem('dtr_active_section') || 'home';
+                    showSection(lastSection);
                     checkDailyEntryReminder(); // Check for 24h inactivity
                     setupRealtimeListener(storedUser); // Start Sync
                 } else {
@@ -727,7 +726,7 @@
         }
 
         // Check login status on load
-        checkAuthStatus();
+        // checkAuthStatus(); // Moved to end of script to ensure showSection is defined
 
         // Register Function
         registerBtn.addEventListener('click', () => {
@@ -772,10 +771,9 @@
                 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
-                // Show footer nav if on home screen (default)
-                if (document.getElementById('homeSection').classList.contains('active')) {
-                    homeFooterNav.style.display = 'flex';
-                }
+                // Restore last active section
+                const lastSection = localStorage.getItem('dtr_active_section') || 'home';
+                showSection(lastSection);
                 checkDailyEntryReminder();
                 setupRealtimeListener(loginUsername.value); // Start Sync
             } else {
@@ -843,10 +841,9 @@
 
                 loginContainer.style.display = 'none';
                 mainContainer.style.display = 'flex';
-                // Show footer nav if on home screen (default)
-                if (document.getElementById('homeSection').classList.contains('active')) {
-                    homeFooterNav.style.display = 'flex';
-                }
+                // Restore last active section
+                const lastSection = localStorage.getItem('dtr_active_section') || 'home';
+                showSection(lastSection);
                 setupRealtimeListener(localStorage.getItem('dtr_username')); // Start Sync
             } catch (err) {
                 console.error(err);
@@ -1506,6 +1503,7 @@
 
         // Navigation Logic
         window.showSection = function(sectionId) {
+            localStorage.setItem('dtr_active_section', sectionId);
             // Update buttons
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             const targetBtn = document.querySelector(`.nav-btn[onclick="showSection('${sectionId}')"]`);
@@ -1518,16 +1516,21 @@
             document.getElementById(sectionId + 'Section').classList.add('active');
 
             const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+            const mobileSearchBar = document.getElementById('mobileSearchBar');
+            const desktopSearchContainer = document.querySelector('.search-container');
 
             // Show/hide footer nav and other UI based on section
             if (sectionId === 'home' || sectionId === 'list') {
                 homeFooterNav.style.display = 'flex';
                 fabBtn.style.display = 'flex'; // Show FAB
-                if (mobileSearchBtn) mobileSearchBtn.style.display = 'flex';
+                if (mobileSearchBtn) mobileSearchBtn.style.display = ''; // Let CSS control display
+                if (desktopSearchContainer) desktopSearchContainer.style.display = ''; // Show desktop search
             } else {
                 homeFooterNav.style.display = 'none';
                 fabBtn.style.display = 'none'; // Hide FAB
-                if (mobileSearchBtn) mobileSearchBtn.style.display = 'none';
+                if (mobileSearchBtn) mobileSearchBtn.style.display = ''; // Let CSS control display (Retain icon)
+                if (mobileSearchBar) mobileSearchBar.style.display = 'none'; // Hide mobile search bar
+                if (desktopSearchContainer) desktopSearchContainer.style.display = 'none'; // Hide desktop search bar
             }
         }
 
@@ -1619,6 +1622,9 @@
         
         // Initial render
         renderTable();
+
+        // Check login status on load
+        checkAuthStatus();
 
         // PWA Manifest Generation (Makes the app installable)
         const manifest = {
