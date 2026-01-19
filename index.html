@@ -159,6 +159,33 @@
             color: var(--primary-color);
         }
 
+        /* Floating Action Button */
+        .fab-btn {
+            position: fixed;
+            bottom: 80px; /* Above footer nav */
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: none; /* Controlled by JS */
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            z-index: 999;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .fab-btn:active { transform: scale(0.95); }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; padding: 1rem; box-sizing: border-box; }
+        .modal-content { background: var(--card-bg); padding: 2rem; border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; padding: 0.5rem; }
+
         .mobile-swipe-view { display: none; }
         .day-card { background: var(--card-bg); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 0.8rem; position: relative; }
         .day-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; margin-bottom: 0.5rem; }
@@ -218,6 +245,8 @@
             .footer-nav {
                 display: none !important; /* Always hide on desktop */
             }
+            #mobileSearchBtn { display: none; }
+            #mobileSearchBar { display: none !important; }
         }
         @media (max-width: 600px) {
             body { margin: 1rem auto; padding: 0 0.5rem; }
@@ -226,8 +255,13 @@
             .nav-btn { width: auto; flex-direction: column; gap: 4px; padding: 0.5rem; font-size: 0.8rem; }
             .nav-btn i { font-size: 1.2rem; }
             .nav-btn span { display: block; font-size: 0.7rem; } /* Show text on mobile */
-            .main-content { width: 100%; padding: 1rem; box-sizing: border-box; padding-bottom: 70px; /* Space for footer nav */ }
             
+            /* Mobile Sidebar Adjustments */
+            #logoutBtn { display: none; } /* Hide logout in sidebar on mobile */
+            #mobileSearchBtn { display: flex; } /* Show search icon */
+            
+            .main-content { width: 100%; padding: 1rem; box-sizing: border-box; padding-bottom: 70px; /* Space for footer nav */ }
+            .top-header { display: none; } /* Hide top header on mobile */
             .welcome-banner { flex-direction: column; align-items: flex-start; gap: 1rem; }
             /* Swipe Feature Logic */
             .table-responsive { display: none; } /* Hide table on mobile */
@@ -283,12 +317,17 @@
             <button class="nav-btn active" onclick="showSection('home')" title="Home"><i class="fas fa-home"></i> <span>Home</span></button>
             <button class="nav-btn" onclick="showSection('profile')" title="Profile"><i class="fas fa-user"></i> <span>Profile</span></button>
             <button class="nav-btn" onclick="showSection('settings')" title="Settings"><i class="fas fa-cog"></i> <span>Settings</span></button>
+            <button class="nav-btn" id="mobileSearchBtn" onclick="toggleMobileSearch()" title="Search"><i class="fas fa-search"></i> <span>Search</span></button>
             <div style="flex-grow: 1;"></div>
             <button id="logoutBtn" class="nav-btn" style="color: #dc3545;" title="Logout"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
         </div>
         
         <!-- Content Area -->
         <div class="main-content">
+            <div id="mobileSearchBar" style="display: none; margin-bottom: 1rem;">
+                <input type="text" id="mobileSearchInput" placeholder="Search records..." style="width: 100%;">
+            </div>
+
             <div class="top-header">
                 <span class="greeting" id="topGreeting">Hello, User</span>
                 <div class="search-container">
@@ -332,8 +371,13 @@
                     </div>
                 </div>
 
-                <div class="section-header" onclick="toggleSection('addRecordContainer')"><i class="fas fa-plus-circle"></i> Add Record <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.9rem; color: var(--text-muted);"></i></div>
-                <div id="addRecordContainer" style="display: none;">
+            </div>
+
+            <!-- Add Record Modal -->
+            <div id="addRecordModal" class="modal-overlay">
+                <div class="modal-content">
+                    <button class="modal-close" onclick="closeAddModal()"><i class="fas fa-times"></i></button>
+                    <h3 style="margin-top: 0; margin-bottom: 1.5rem;">Add/Edit Record</h3>
                     <div class="form-group">
                         <div class="input-wrapper">
                             <label for="date">Date</label>
@@ -371,9 +415,11 @@
                         <button id="addBtn"><i class="fas fa-plus-circle"></i> Add Entry</button>
                     </div>
                 </div>
+            </div>
 
-                <div class="section-header" onclick="toggleSection('recordListContainer')"><i class="fas fa-list"></i> Record List <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 0.9rem; color: var(--text-muted);"></i></div>
-                <div id="recordListContainer" style="display: none;">
+            <!-- List Section (Moved from Home) -->
+            <div id="listSection" class="section">
+                <div id="recordListContainer">
                     <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div class="filter-minimal">
                             <select id="typeFilter">
@@ -481,6 +527,9 @@
             <button class="footer-nav-btn" id="footerListBtn"><i class="fas fa-list"></i> <span>List</span></button>
             <button class="footer-nav-btn" id="footerLogoutBtn" style="color: #dc3545;"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
         </div>
+
+        <!-- Floating Action Button -->
+        <button id="fabBtn" class="fab-btn" onclick="openAddModal()"><i class="fas fa-plus"></i></button>
     </div>
 
     <script>
@@ -564,6 +613,8 @@
         const footerDashboardBtn = document.getElementById('footerDashboardBtn');
         const footerListBtn = document.getElementById('footerListBtn');
         const footerLogoutBtn = document.getElementById('footerLogoutBtn');
+        const fabBtn = document.getElementById('fabBtn');
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
 
 
         // Load saved settings
@@ -1276,16 +1327,10 @@
         });
 
         footerListBtn.addEventListener('click', () => {
-            const recordListContainer = document.getElementById('recordListContainer');
-            if (recordListContainer.style.display === 'none' || !recordListContainer.style.display) {
-                toggleSection('recordListContainer');
-            }
-            // A small delay to allow the container to be displayed before scrolling
-            setTimeout(() => {
-                recordListContainer.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            showSection('list');
             homeFooterNav.querySelectorAll('.footer-nav-btn').forEach(b => b.classList.remove('active'));
             footerListBtn.classList.add('active');
+            document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         footerLogoutBtn.addEventListener('click', () => {
@@ -1366,6 +1411,7 @@
             notesInput.value = '';
             editingId = null;
             addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Entry';
+            closeAddModal();
         }
 
         window.editRecord = function(id) {
@@ -1381,9 +1427,7 @@
                 editingId = id;
                 addBtn.innerHTML = '<i class="fas fa-save"></i> Update Entry';
                 
-                const formContainer = document.getElementById('addRecordContainer');
-                formContainer.style.display = 'block';
-                formContainer.scrollIntoView({behavior: 'smooth'});
+                openAddModal();
             }
         }
 
@@ -1401,10 +1445,12 @@
             document.getElementById(sectionId + 'Section').classList.add('active');
 
             // Show/hide footer nav based on section
-            if (sectionId === 'home') {
+            if (sectionId === 'home' || sectionId === 'list') {
                 homeFooterNav.style.display = 'flex';
+                fabBtn.style.display = 'flex'; // Show FAB
             } else {
                 homeFooterNav.style.display = 'none';
+                fabBtn.style.display = 'none'; // Hide FAB
             }
         }
 
@@ -1475,6 +1521,24 @@
 
         addBtn.addEventListener('click', addRecord);
         searchInput.addEventListener('input', (e) => renderTable(e.target.value));
+        mobileSearchInput.addEventListener('input', (e) => {
+            searchInput.value = e.target.value; // Sync with desktop
+            renderTable(e.target.value);
+        });
+
+        window.toggleMobileSearch = function() {
+            const bar = document.getElementById('mobileSearchBar');
+            bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+            if(bar.style.display === 'block') document.getElementById('mobileSearchInput').focus();
+        }
+
+        window.openAddModal = function() {
+            document.getElementById('addRecordModal').style.display = 'flex';
+        }
+
+        window.closeAddModal = function() {
+            document.getElementById('addRecordModal').style.display = 'none';
+        }
         
         // Initial render
         renderTable();
