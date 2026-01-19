@@ -493,6 +493,20 @@
                         <input type="text" id="profileJob" placeholder="Job Title" style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; background: transparent; border: none; width: 80%;">
                         <textarea id="profileBio" placeholder="Write a short bio about yourself..." style="width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); resize: vertical; min-height: 100px; font-family: inherit;"></textarea>
                         <button id="saveProfileBtn" style="margin-top: 1.5rem; width: 100%;">Save Profile Details</button>
+
+                        <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); width: 100%;">
+                            <h4 style="margin-bottom: 1.5rem; text-align: center; color: var(--text-muted); font-weight: 500;">Change Password</h4>
+                            <div class="input-wrapper" style="width: 80%; margin: 0 auto 1rem;">
+                                <input type="password" id="currentPassword" placeholder="Current Password">
+                            </div>
+                            <div class="input-wrapper" style="width: 80%; margin: 0 auto 1rem;">
+                                <input type="password" id="newPassword" placeholder="New Password">
+                            </div>
+                            <div class="input-wrapper" style="width: 80%; margin: 0 auto 1.5rem;">
+                                <input type="password" id="confirmNewPassword" placeholder="Confirm New Password">
+                            </div>
+                            <button id="changePasswordBtn" style="width: 80%; margin: 0 auto; display: block; background-color: #6c757d;">Update Password</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -620,6 +634,10 @@
         const footerLogoutBtn = document.getElementById('footerLogoutBtn');
         const fabBtn = document.getElementById('fabBtn');
         const profileUsername = document.getElementById('profileUsername');
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const currentPasswordInput = document.getElementById('currentPassword');
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
         const mobileSearchInput = document.getElementById('mobileSearchInput');
 
 
@@ -1344,8 +1362,39 @@
             alert('Profile saved!');
         });
 
+        changePasswordBtn.addEventListener('click', () => {
+            const currentPassword = currentPasswordInput.value;
+            const newPassword = newPasswordInput.value;
+            const confirmNewPassword = confirmNewPasswordInput.value;
+            const storedPassword = localStorage.getItem('dtr_password');
+
+            if (!currentPassword || !newPassword || !confirmNewPassword) {
+                alert('Please fill in all password fields.');
+                return;
+            }
+
+            if (currentPassword !== storedPassword) {
+                alert('Incorrect current password.');
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                alert('New passwords do not match.');
+                return;
+            }
+
+            localStorage.setItem('dtr_password', newPassword);
+            alert('Password updated successfully!');
+
+            // Clear fields
+            currentPasswordInput.value = '';
+            newPasswordInput.value = '';
+            confirmNewPasswordInput.value = '';
+        });
+
         footerDashboardBtn.addEventListener('click', () => {
-            document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
+            showSection('home');
+            document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top of home
             homeFooterNav.querySelectorAll('.footer-nav-btn').forEach(b => b.classList.remove('active'));
             footerDashboardBtn.classList.add('active');
         });
