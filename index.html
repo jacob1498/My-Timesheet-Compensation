@@ -1031,7 +1031,7 @@
             const lastDate = new Date(lastRecord.date);
             const now = new Date();
             const diffHours = (now - lastDate) / (1000 * 60 * 60);
-            if (diffHours > 24 && Notification.permission === "granted") {
+            if (diffHours > 24 && "Notification" in window && Notification.permission === "granted") {
                 new Notification("My-DTR Reminder", { body: "You haven't added a time entry in over 24 hours!", icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" });
             }
         }
@@ -1980,7 +1980,11 @@
         let alarmInterval;
         let isAlarmRinging = false;
         // Simple beep sound using AudioContext to avoid external file dependencies
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioCtx;
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtx = new AudioContext();
+        } catch (e) { console.warn("Web Audio API not supported"); }
         let customAudio = null;
 
         function playAlarmSound() {
@@ -1992,6 +1996,7 @@
                 return;
             }
 
+            if (!audioCtx) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -2117,7 +2122,13 @@
         renderTable();
 
         // Check login status on load
-        checkAuthStatus();
+        try {
+            checkAuthStatus();
+        } catch (e) {
+            console.error("Initialization error:", e);
+            // Fallback to login screen if localStorage fails or other errors occur
+            document.getElementById('loginContainer').style.display = 'block';
+        }
 
         // PWA Manifest Generation (Makes the app installable)
         const manifest = {
