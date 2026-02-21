@@ -287,6 +287,10 @@
             button#addBtn { width: 100%; margin-top: 0.5rem; }
 
         }
+        
+        /* Camera Styles */
+        #cameraModal video { width: 100%; max-height: 60vh; border-radius: 12px; transform: scaleX(-1); background: #000; }
+        .photo-preview { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); margin-left: 10px; cursor: pointer; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -455,12 +459,18 @@
                             </select>
                         </div>
                         <div class="input-wrapper">
-                        <label for="timeIn">Time In <i class="fas fa-clock" id="clockInNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i></label>
+                            <label for="timeIn">Time In <i class="fas fa-clock" id="clockInNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i> <i class="fas fa-camera" id="camInBtn" style="cursor: pointer; color: var(--primary-color); margin-left: 8px;" title="Photo Clock In"></i></label>
+                            <div style="display: flex; align-items: center;">
                             <input type="time" id="timeIn">
+                            <img id="previewIn" class="photo-preview" style="display:none;" title="View Photo">
+                            </div>
                         </div>
                         <div class="input-wrapper">
-                            <label for="timeOut">Time Out <i class="fas fa-clock" id="clockOutNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i></label>
+                            <label for="timeOut">Time Out <i class="fas fa-clock" id="clockOutNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i> <i class="fas fa-camera" id="camOutBtn" style="cursor: pointer; color: var(--primary-color); margin-left: 8px;" title="Photo Clock Out"></i></label>
+                            <div style="display: flex; align-items: center;">
                             <input type="time" id="timeOut">
+                            <img id="previewOut" class="photo-preview" style="display:none;" title="View Photo">
+                            </div>
                         </div>
                         <div class="input-wrapper">
                             <label for="breakDuration">Break</label>
@@ -613,6 +623,26 @@
         <button id="fabBtn" class="fab-btn" onclick="openAddModal()"><i class="fas fa-plus"></i></button>
     </div>
 
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="modal-overlay" style="z-index: 2001;">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <h3>Capture Photo</h3>
+            <video id="cameraFeed" autoplay playsinline></video>
+            <canvas id="cameraCanvas" style="display: none;"></canvas>
+            <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
+                <button id="captureBtn" style="background: var(--primary-color); width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; display: flex; justify-content: center; align-items: center;"><i class="fas fa-camera"></i></button>
+                <button onclick="closeCamera()" style="background: #6c757d; height: 40px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Viewer Modal -->
+    <div id="photoViewerModal" class="modal-overlay" style="z-index: 2002;" onclick="this.style.display='none'">
+        <div class="modal-content" style="text-align: center; background: transparent; box-shadow: none; padding: 0; display: flex; justify-content: center;">
+            <img id="largePhotoView" src="" style="max-width: 100%; max-height: 80vh; border-radius: 12px; border: 4px solid white;">
+        </div>
+    </div>
+
     <script>
         // --- FIREBASE SETUP ---
         // NOTE: To use Firebase, you must host this file (e.g., GitHub Pages) or use a local server.
@@ -705,6 +735,15 @@
         const alarmSoundUpload = document.getElementById('alarmSoundUpload');
         const previewSoundBtn = document.getElementById('previewSoundBtn');
         const resetSoundBtn = document.getElementById('resetSoundBtn');
+        
+        // Camera Elements
+        const cameraModal = document.getElementById('cameraModal');
+        const cameraFeed = document.getElementById('cameraFeed');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const previewIn = document.getElementById('previewIn');
+        const previewOut = document.getElementById('previewOut');
+        const largePhotoView = document.getElementById('largePhotoView');
 
 
         // Load saved settings
@@ -1004,6 +1043,8 @@
         const addBtn = document.getElementById('addBtn');
         const tableBody = document.querySelector('#dtrTable tbody');
         const searchInput = document.getElementById('searchInput');
+        let photoInBase64 = null;
+        let photoOutBase64 = null;
 
         // Initialize date input to today
         dateInput.valueAsDate = new Date();
@@ -1110,6 +1151,12 @@
                     }
                 }
 
+                // Photo Indicators
+                let photoHtml = '';
+                if (record.photoIn || record.photoOut) {
+                    photoHtml = `<button class="edit-btn" style="background-color: #17a2b8; color: white;" onclick="viewRecordPhotos('${recId}')"><i class="fas fa-camera"></i></button>`;
+                }
+
                 // Ensure record has an ID for deletion (fallback for local data)
                 const recId = record.id || `local_${index}`;
 
@@ -1123,7 +1170,7 @@
                     <td data-label="Total">${displayTotal} ${warningHtml}</td>
                     <td data-label="OT" style="color: ${otHours > 0 ? '#dc3545' : 'inherit'}; font-weight: ${otHours > 0 ? 'bold' : 'normal'};">${displayOT}</td>
                     <td data-label="Notes" style="font-size: 0.9rem; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${record.notes || ''}</td>
-                    <td data-label="Action"><button class="edit-btn" onclick="editRecord('${recId}')"><i class="fas fa-edit"></i></button> <button class="delete-btn" onclick="deleteRecord('${recId}')"><i class="fas fa-trash-alt"></i></button></td>
+                    <td data-label="Action">${photoHtml} <button class="edit-btn" onclick="editRecord('${recId}')"><i class="fas fa-edit"></i></button> <button class="delete-btn" onclick="deleteRecord('${recId}')"><i class="fas fa-trash-alt"></i></button></td>
                 `;
                 tableBody.appendChild(row);
 
@@ -1136,6 +1183,7 @@
                     <div class="day-card-header">
                         <div class="day-card-date">${new Date(record.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
                         <div>
+                            ${photoHtml}
                             <button class="edit-btn" onclick="editRecord('${recId}')" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;"><i class="fas fa-edit"></i></button>
                             <button class="delete-btn" onclick="deleteRecord('${recId}')" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;"><i class="fas fa-trash-alt"></i></button>
                         </div>
@@ -1268,7 +1316,7 @@
                 const rec = allRecords.find(r => r.date === dateStr);
                 const isToday = (dateStr === now.toISOString().split('T')[0]);
                 
-                html += `<div class="calendar-day ${rec ? 'has-record' : ''} ${isToday ? 'today' : ''}">
+                html += `<div class="calendar-day ${rec ? 'has-record' : ''} ${isToday ? 'today' : ''}" onclick="filterDateAndShowList('${dateStr}')">
                     <span class="day-number">${d}</span>
                     ${rec ? `<span class="day-hours">${rec.timeOut ? ((new Date(`1970-01-01T${rec.timeOut}:00`) - new Date(`1970-01-01T${rec.timeIn}:00`))/3600000 - (parseFloat(rec.breakDuration)||0)).toFixed(1) + 'h' : 'Active'}</span>` : ''}
                 </div>`;
@@ -1307,6 +1355,22 @@
             yearFilter.style.display = 'none';
             
             renderTable(searchInput.value);
+        }
+
+        window.filterDateAndShowList = function(dateStr) {
+            const filterType = document.getElementById('filterType');
+            const dateFilter = document.getElementById('dateFilter');
+            
+            filterType.value = 'date';
+            dateFilter.value = dateStr;
+            
+            // Trigger change to update UI visibility and render table
+            filterType.dispatchEvent(new Event('change'));
+            
+            // Switch to list view if currently in calendar view
+            if (isCalendarView) {
+                document.getElementById('toggleCalendarBtn').click();
+            }
         }
 
         // Dashboard Pie Chart Logic
@@ -1606,7 +1670,9 @@
                 timeOut: timeOutInput.value,
                 username: username,
                 breakDuration: breakDurationInput.value,
-                notes: notesInput.value
+                notes: notesInput.value,
+                photoIn: photoInBase64,
+                photoOut: photoOutBase64
             };
             
             if (db && username) {
@@ -1643,6 +1709,8 @@
             breakDurationInput.value = '0';
             notesInput.value = '';
             editingId = null;
+            photoInBase64 = null;
+            photoOutBase64 = null;
             addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Entry';
             closeAddModal();
         }
@@ -1658,6 +1726,19 @@
                 breakDurationInput.value = record.breakDuration || 0;
                 notesInput.value = record.notes || '';
                 editingId = id;
+                
+                photoInBase64 = record.photoIn || null;
+                photoOutBase64 = record.photoOut || null;
+                
+                if(photoInBase64) {
+                    previewIn.src = photoInBase64;
+                    previewIn.style.display = 'inline-block';
+                }
+                if(photoOutBase64) {
+                    previewOut.src = photoOutBase64;
+                    previewOut.style.display = 'inline-block';
+                }
+
                 addBtn.innerHTML = '<i class="fas fa-save"></i> Update Entry';
                 
                 openAddModal();
@@ -1785,7 +1866,90 @@
 
         window.closeAddModal = function() {
             document.getElementById('addRecordModal').style.display = 'none';
+            // Stop camera if open
+            closeCamera();
         }
+        
+        // --- Camera Logic ---
+        let activeCaptureType = null; // 'in' or 'out'
+        let streamObj = null;
+
+        async function startCamera(type) {
+            activeCaptureType = type;
+            cameraModal.style.display = 'flex';
+            try {
+                streamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+                cameraFeed.srcObject = streamObj;
+            } catch (err) {
+                alert("Could not access camera: " + err.message);
+                closeCamera();
+            }
+        }
+
+        function closeCamera() {
+            cameraModal.style.display = 'none';
+            if (streamObj) {
+                streamObj.getTracks().forEach(track => track.stop());
+                streamObj = null;
+            }
+        }
+
+        captureBtn.addEventListener('click', () => {
+            if (!streamObj) return;
+            
+            // Draw to canvas
+            const context = cameraCanvas.getContext('2d');
+            cameraCanvas.width = 320; // Resize for storage efficiency
+            cameraCanvas.height = 240;
+            
+            // Draw video frame to canvas (mirroring if needed, but simple draw is fine for now)
+            context.drawImage(cameraFeed, 0, 0, 320, 240);
+            
+            // Get Base64
+            const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.7);
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+            if (activeCaptureType === 'in') {
+                photoInBase64 = dataUrl;
+                previewIn.src = dataUrl;
+                previewIn.style.display = 'inline-block';
+                timeInInput.value = timeStr;
+                if(!dateInput.value) dateInput.valueAsDate = now;
+            } else {
+                photoOutBase64 = dataUrl;
+                previewOut.src = dataUrl;
+                previewOut.style.display = 'inline-block';
+                timeOutInput.value = timeStr;
+            }
+            
+            closeCamera();
+        });
+
+        document.getElementById('camInBtn').addEventListener('click', () => startCamera('in'));
+        document.getElementById('camOutBtn').addEventListener('click', () => startCamera('out'));
+        
+        previewIn.addEventListener('click', () => {
+            largePhotoView.src = previewIn.src;
+            document.getElementById('photoViewerModal').style.display = 'flex';
+        });
+        previewOut.addEventListener('click', () => {
+            largePhotoView.src = previewOut.src;
+            document.getElementById('photoViewerModal').style.display = 'flex';
+        });
+
+        window.viewRecordPhotos = function(id) {
+            const record = records.find(r => (r.id || `local_${records.indexOf(r)}`) === id);
+            if (record) {
+                // Prefer Photo In, then Photo Out
+                const src = record.photoIn || record.photoOut;
+                if(src) {
+                    largePhotoView.src = src;
+                    document.getElementById('photoViewerModal').style.display = 'flex';
+                }
+            }
+        };
 
         // --- Alarm Clock Logic ---
         const alarmClockDisplay = document.getElementById('alarmClockDisplay');
