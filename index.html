@@ -734,6 +734,7 @@
         const newPasswordInput = document.getElementById('newPassword');
         const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
         const mobileSearchInput = document.getElementById('mobileSearchInput');
+        const typeFilter = document.getElementById('typeFilter');
         const alarmSoundUpload = document.getElementById('alarmSoundUpload');
         const previewSoundBtn = document.getElementById('previewSoundBtn');
         const resetSoundBtn = document.getElementById('resetSoundBtn');
@@ -1378,6 +1379,7 @@
         // Dashboard Pie Chart Logic
         let dashboardChart = null;
         function renderDashboardChart(counts) {
+            if (typeof Chart === 'undefined') return;
             const ctx = document.getElementById('dashboardPieChart');
             if (!ctx) return;
             
@@ -1468,6 +1470,7 @@
         });
 
         function renderChart(data) {
+            if (typeof Chart === 'undefined') return;
             const ctx = document.getElementById('hoursChart');
             if (!ctx || document.getElementById('chartView').style.display === 'none') return;
 
@@ -2119,7 +2122,11 @@
         checkAlarm(); // Initial call
         
         // Initial render
-        renderTable();
+        try {
+            renderTable();
+        } catch (e) {
+            console.error("Render error:", e);
+        }
 
         // Check login status on load
         try {
