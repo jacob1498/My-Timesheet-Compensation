@@ -289,7 +289,8 @@
         }
         
         /* Camera Styles */
-        #cameraModal video { width: 100%; max-height: 60vh; border-radius: 12px; transform: scaleX(-1); background: #000; }
+        #cameraModal video { width: 100%; max-height: 60vh; border-radius: 12px; background: #000; }
+        .video-mirrored { transform: scaleX(-1); }
         .photo-preview { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); margin-left: 10px; cursor: pointer; vertical-align: middle; }
     </style>
 </head>
@@ -626,6 +627,7 @@
     <!-- Camera Modal -->
     <div id="cameraModal" class="modal-overlay" style="z-index: 2001;">
         <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <button onclick="switchCamera()" style="position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.5); width: 40px; height: 40px; border-radius: 50%; padding: 0; z-index: 10;" title="Switch Camera"><i class="fas fa-sync-alt"></i></button>
             <h3>Capture Photo</h3>
             <video id="cameraFeed" autoplay playsinline></video>
             <canvas id="cameraCanvas" style="display: none;"></canvas>
@@ -1873,17 +1875,35 @@
         // --- Camera Logic ---
         let activeCaptureType = null; // 'in' or 'out'
         let streamObj = null;
+        let currentFacingMode = 'user';
 
         async function startCamera(type) {
             activeCaptureType = type;
             cameraModal.style.display = 'flex';
+            await initCameraStream();
+        }
+
+        async function initCameraStream() {
+            if (streamObj) {
+                streamObj.getTracks().forEach(track => track.stop());
+            }
+            
+            // Mirror only if using front camera
+            if (currentFacingMode === 'user') cameraFeed.classList.add('video-mirrored');
+            else cameraFeed.classList.remove('video-mirrored');
+
             try {
-                streamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+                streamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: false });
                 cameraFeed.srcObject = streamObj;
             } catch (err) {
                 alert("Could not access camera: " + err.message);
                 closeCamera();
             }
+        }
+
+        window.switchCamera = function() {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            initCameraStream();
         }
 
         function closeCamera() {
