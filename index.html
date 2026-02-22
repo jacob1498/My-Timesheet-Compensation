@@ -462,15 +462,21 @@
                         <div class="input-wrapper">
                             <label for="timeIn">Time In <i class="fas fa-clock" id="clockInNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i> <i class="fas fa-camera" id="camInBtn" style="cursor: pointer; color: var(--primary-color); margin-left: 8px;" title="Photo Clock In"></i></label>
                             <div style="display: flex; align-items: center;">
-                            <input type="time" id="timeIn">
-                            <img id="previewIn" class="photo-preview" style="display:none;" title="View Photo">
+                                <input type="time" id="timeIn">
+                                <div id="photoInContainer" style="display:none; align-items: center;">
+                                    <img id="previewIn" class="photo-preview" title="View Photo">
+                                    <i class="fas fa-times-circle" onclick="removePhoto('in')" style="color: #dc3545; cursor: pointer; margin-left: 5px;" title="Remove Photo"></i>
+                                </div>
                             </div>
                         </div>
                         <div class="input-wrapper">
                             <label for="timeOut">Time Out <i class="fas fa-clock" id="clockOutNow" style="cursor: pointer; color: var(--primary-color); margin-left: 5px;" title="Set to Current Time"></i> <i class="fas fa-camera" id="camOutBtn" style="cursor: pointer; color: var(--primary-color); margin-left: 8px;" title="Photo Clock Out"></i></label>
                             <div style="display: flex; align-items: center;">
-                            <input type="time" id="timeOut">
-                            <img id="previewOut" class="photo-preview" style="display:none;" title="View Photo">
+                                <input type="time" id="timeOut">
+                                <div id="photoOutContainer" style="display:none; align-items: center;">
+                                    <img id="previewOut" class="photo-preview" title="View Photo">
+                                    <i class="fas fa-times-circle" onclick="removePhoto('out')" style="color: #dc3545; cursor: pointer; margin-left: 5px;" title="Remove Photo"></i>
+                                </div>
                             </div>
                         </div>
                         <div class="input-wrapper">
@@ -1701,8 +1707,15 @@
                         ...recordData
                     });
                 }
-                localStorage.setItem('dtr_records', JSON.stringify(records));
-                renderTable(searchInput.value);
+                
+                try {
+                    localStorage.setItem('dtr_records', JSON.stringify(records));
+                    renderTable(searchInput.value);
+                } catch (e) {
+                    alert("Storage Full! Cannot save data.\n\nPhotos take up a lot of space. Please delete old records or clear data in Settings.");
+                    // Revert changes in memory to match storage
+                    records = JSON.parse(localStorage.getItem('dtr_records')) || [];
+                }
             }
             
             // Reset Form
@@ -1716,6 +1729,8 @@
             editingId = null;
             photoInBase64 = null;
             photoOutBase64 = null;
+            document.getElementById('photoInContainer').style.display = 'none';
+            document.getElementById('photoOutContainer').style.display = 'none';
             addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Entry';
             closeAddModal();
         }
@@ -1737,11 +1752,11 @@
                 
                 if(photoInBase64) {
                     previewIn.src = photoInBase64;
-                    previewIn.style.display = 'inline-block';
+                    document.getElementById('photoInContainer').style.display = 'flex';
                 }
                 if(photoOutBase64) {
                     previewOut.src = photoOutBase64;
-                    previewOut.style.display = 'inline-block';
+                    document.getElementById('photoOutContainer').style.display = 'flex';
                 }
 
                 addBtn.innerHTML = '<i class="fas fa-save"></i> Update Entry';
@@ -1927,28 +1942,49 @@
             
             // Draw video frame to canvas (mirroring if needed, but simple draw is fine for now)
             context.drawImage(cameraFeed, 0, 0, 320, 240);
+
+            // --- Add Watermark ---
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const timeStr = now.toLocaleTimeString();
+            
+            context.font = "bold 14px sans-serif";
+            context.fillStyle = "#ffffff";
+            context.shadowColor = "black";
+            context.shadowBlur = 4;
+            context.fillText(`${dateStr} ${timeStr}`, 10, 230);
+            // ---------------------
             
             // Get Base64
-            const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.7);
+            const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.5); // Reduced quality to 0.5 to save space
             
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            const timeStrVal = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
             if (activeCaptureType === 'in') {
                 photoInBase64 = dataUrl;
                 previewIn.src = dataUrl;
-                previewIn.style.display = 'inline-block';
-                timeInInput.value = timeStr;
+                document.getElementById('photoInContainer').style.display = 'flex';
+                timeInInput.value = timeStrVal;
                 if(!dateInput.value) dateInput.valueAsDate = now;
             } else {
                 photoOutBase64 = dataUrl;
                 previewOut.src = dataUrl;
-                previewOut.style.display = 'inline-block';
-                timeOutInput.value = timeStr;
+                document.getElementById('photoOutContainer').style.display = 'flex';
+                timeOutInput.value = timeStrVal;
             }
             
             closeCamera();
         });
+
+        window.removePhoto = function(type) {
+            if (type === 'in') {
+                photoInBase64 = null;
+                document.getElementById('photoInContainer').style.display = 'none';
+            } else {
+                photoOutBase64 = null;
+                document.getElementById('photoOutContainer').style.display = 'none';
+            }
+        }
 
         document.getElementById('camInBtn').addEventListener('click', () => startCamera('in'));
         document.getElementById('camOutBtn').addEventListener('click', () => startCamera('out'));
